@@ -1,5 +1,8 @@
 ﻿namespace AoC2023;
 
+using System;
+using System.IO;
+
 partial class Program
 {
     static void Main(string[] args)
@@ -19,7 +22,7 @@ partial class Program
         switch (day)
         {
             case 1:
-                Day1(phase, datafile);
+                Console.WriteLine(Day1(phase, datafile));
                 break;
         }
     }
