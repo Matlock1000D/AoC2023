@@ -57,23 +57,48 @@ partial class Program
         }
 
         //käydään pelit läpi
-        foreach(Cubegame cubegame1 in set_cubegames)
+        if (phase == 1)
         {
-            foreach(HashSet<(string, int)> cubeset in cubegame1.cubesets)
+            foreach(Cubegame cubegame1 in set_cubegames)
             {
-                foreach((string, int) cubenum in cubeset)
+                foreach(HashSet<(string, int)> cubeset in cubegame1.cubesets)
                 {
-                    //Onko liikaa kuutioita
-                    if(cubenum.Item2 > maxcubes[cubenum.Item1])
+                    foreach((string, int) cubenum in cubeset)
                     {
-                        goto Escape;    //paetaan silmukoista jos kuutioita on liikaa
+                        //Onko liikaa kuutioita
+                        if(cubenum.Item2 > maxcubes[cubenum.Item1])
+                        {
+                            goto Escape;    //paetaan silmukoista jos kuutioita on liikaa
+                        }
                     }
                 }
-            }
-            //jos virheitä ei ole löytynyt, kasvatetaan tulosta
-            result += cubegame1.Id;
-            Escape:;
+                //jos virheitä ei ole löytynyt, kasvatetaan tulosta
+                result += cubegame1.Id;
+                Escape:;
 
+            }
+        }
+        if (phase == 2)
+        {
+            //käytetään uudestaan maxcubes-sanakirjaa kun ei sitä muuhunkaan tarvita
+            foreach(Cubegame cubegame1 in set_cubegames)
+            {
+                foreach(var element in maxcubes.Keys) maxcubes[element] = 0;
+                foreach(HashSet<(string, int)> cubeset in cubegame1.cubesets)
+                {
+                    foreach((string, int) cubenum in cubeset)
+                    {
+                        //Onko kuutiomäärä pienin tunnettu
+                        if(cubenum.Item2 > maxcubes[cubenum.Item1])
+                        {
+                            maxcubes[cubenum.Item1] = cubenum.Item2;
+                        }
+                    }
+                }
+                int power = 1;
+                foreach(var element in maxcubes.Keys) power *= maxcubes[element];
+                result += power;
+            }
         }
         return result;
     }
