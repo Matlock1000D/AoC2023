@@ -24,6 +24,9 @@ partial class Program
             case 1:
                 Console.WriteLine(Day1(phase, datafile));
                 break;
+            case 2:
+                Console.WriteLine(Day2(phase, datafile));
+                break;
         }
     }
 }
