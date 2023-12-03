@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Diagnostics;
 
 partial class Program
 {
@@ -14,6 +15,9 @@ partial class Program
         }
 
         //Virheenhallinta olkoon vähän niin ja näin, koska emmehän tee virheitä.
+
+        var timer = new Stopwatch();
+        timer.Start();
 
         int day = int.Parse(args[0]);
         int phase = int.Parse(args[1]);
@@ -31,5 +35,9 @@ partial class Program
                 Console.WriteLine(Day3(phase, datafile));
                 break;
         }
+
+        timer.Stop();
+        var runtime = timer.Elapsed;
+        Console.WriteLine($"Aikaa meni: {runtime}");
     }
 }
