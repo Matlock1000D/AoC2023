@@ -9,6 +9,7 @@ partial class Program
     {
         string[] lines = [];
         int result = 0;
+        var gears = new Dictionary<(int,int),List<int>>();
 
         if (File.Exists(datafile))
         {
@@ -65,11 +66,22 @@ partial class Program
                         {
                             if (check_x < 0 | check_x > max_x) continue;
                             if (check_y == y & check_x >= x-curdigits & check_x < x) continue;
-                            if (schematic[check_y][check_x] != '.' & (schematic[check_y][check_x] < '0' | schematic[check_y][check_x] > '9'))
+                            if (phase == 1)
                             {
-                                //löytyi symboli
-                                result += curnum;
-                                goto ExitCheck;
+                                if (schematic[check_y][check_x] != '.' & (schematic[check_y][check_x] < '0' | schematic[check_y][check_x] > '9'))
+                                {
+                                    //löytyi symboli
+                                    result += curnum;
+                                    goto ExitCheck;
+                                }
+                            }
+                            else
+                            {
+                                if (schematic[check_y][check_x] == '*')
+                                {
+                                    if (!gears.ContainsKey((check_x,check_y))) gears.Add((check_x,check_y), new List<int>());
+                                    gears[(check_x,check_y)].Add(curnum);
+                                }
                             }
                         }
                     }
@@ -81,6 +93,13 @@ partial class Program
             }
         }
 
+        if (phase == 2)
+        {
+            foreach(var gear in gears)
+            {
+                if (gear.Value.Count == 2) result += gear.Value[0]*gear.Value[1]; 
+            }
+        }
         return result;
     }
 }
