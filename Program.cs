@@ -17,26 +17,31 @@ partial class Program
         //Virheenhallinta olkoon vähän niin ja näin, koska emmehän tee virheitä.
 
         var timer = new Stopwatch();
-        timer.Start();
+        
 
         int day = int.Parse(args[0]);
         int phase = int.Parse(args[1]);
         string datafile = args[2];
-
+        int result = -1;
+        timer.Start();
         switch (day)
         {
             case 1:
-                Console.WriteLine(Day1(phase, datafile));
+                result = Day1(phase, datafile);
                 break;
             case 2:
-                Console.WriteLine(Day2(phase, datafile));
+                result = Day2(phase, datafile);
                 break;
             case 3:
-                Console.WriteLine(Day3(phase, datafile));
+                result = Day3(phase, datafile);
+                break;
+            case 4:
+                result = Day4(phase, datafile);
                 break;
         }
 
         timer.Stop();
+        Console.WriteLine(result);
         var runtime = timer.Elapsed;
         Console.WriteLine($"Aikaa meni: {runtime}");
     }
