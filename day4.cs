@@ -28,11 +28,11 @@ partial class Program
             Console.WriteLine($"Tiedostoa ei löydy: {datafile}");
         }
 
-        //järjestellään data listaan
-        var scratchcards = new List<(List<int>,List<int>)>();
+        int[] copies = Enumerable.Repeat(1, lines.Length).ToArray();
 
-        foreach(var line in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
+            string? line = lines[i];
             var split_line = line.Split(':');   //itse data on split_line[1]
             var game = split_line[1].Split('|'); //game[0] = voittonumerot, game[1] = pelinumerot
             var winning_numbers = new HashSet<int>();
@@ -60,7 +60,16 @@ partial class Program
             }
             int value=0;
             if (hits > 0) value = (int)Math.Pow(2,(hits-1));
-            result += value;
+            if (phase == 2)
+            {
+                for(int j=1;j<=hits;j++) copies[i+j] += copies[i];
+            }
+            else result += value;
+        }
+
+        if (phase == 2)
+        {
+            for(int i = 0; i<copies.Length;i++) result+=copies[i];
         }
 
         return result;
