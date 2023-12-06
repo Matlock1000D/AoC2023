@@ -1,7 +1,8 @@
 namespace AoC2023;
 
 using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
+using System.Text;
 
 partial class Program
 {
@@ -9,7 +10,7 @@ partial class Program
     {
 
         string[] lines = [];
-        int result = 1;
+        BigInteger result = 1;
 
         if (File.Exists(datafile))
         {
@@ -30,15 +31,30 @@ partial class Program
         }
 
         //alustetaan lista ajoista ja ennätyksistä
-        var timelimits = new List<int>();
-        var records = new List<int>();
+        var timelimits = new List<BigInteger>();
+        var records = new List<BigInteger>();
 
         //luetaan datat listoihin
         string[] str_timelimits = lines[0].Split(' ',StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 1; i < str_timelimits.Length; i++) timelimits.Add(int.Parse(str_timelimits[i]));
+        if (phase == 2)
+        {
+            var timelimitBuilder = new StringBuilder();
+            for (int i = 1; i<str_timelimits.Length;i++) timelimitBuilder.Append(str_timelimits[i]);
+            var timelimit2 = timelimitBuilder.ToString();
+            str_timelimits = new string[] {"times:",timelimit2};
+        }
+        for (int i = 1; i < str_timelimits.Length; i++) timelimits.Add(BigInteger.Parse(str_timelimits[i]));
 
         string[] str_records = lines[1].Split(' ',StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 1; i < str_records.Length; i++) records.Add(int.Parse(str_records[i]));
+        if (phase == 2)
+        {
+            var recordBuilder = new StringBuilder();
+            for (int i = 1; i<str_records.Length;i++) recordBuilder.Append(str_records[i]);
+            var record2 = recordBuilder.ToString();
+            str_records = new string[] {"records:",record2};
+        }
+
+        for (int i = 1; i < str_records.Length; i++) records.Add(BigInteger.Parse(str_records[i]));
 
         //jos aikaraja on t ja napin alaspainoaika x, veneen kulkema matka y = x(t-x) = -x^2+tx
         //2. asteen yhtälön ratkaisukaavalla x = (-t +- sqrt((t)^2-4y))/-2
@@ -49,13 +65,13 @@ partial class Program
             double t = (double) timelimits[i];
             double y = (double) records[i];
 
-            int minx = (int)((t-Math.Sqrt(t*t-4*y))/2);
-            int maxx = (int)Math.Ceiling((t+Math.Sqrt(t*t-4*y))/2);
+            BigInteger minx = (BigInteger)((t-Math.Sqrt(t*t-4*y))/2);
+            BigInteger maxx = (BigInteger)Math.Ceiling((t+Math.Sqrt(t*t-4*y))/2);
 
-            int goodrange = maxx-minx-1;
-            result *= (int)goodrange;
+            BigInteger goodrange = maxx-minx-1;
+            result *= (BigInteger)goodrange;
         }
 
-        return result;
+        return (int)result;
     }
 }
