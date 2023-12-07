@@ -6,10 +6,17 @@ using System.Text;
 
 public class HandComparer : IComparer<(string,int)>
 {
-
+    private int comparetype;
+    
     static List<char> cardlist = new List<char> {'A','K','Q','J','T','9','8','7','6','5','4','3','2'};  //ei varmaan tyylikästä määritellä tätä täällä, mutta olkoon
 
-    static int ClassifyHand(string hand) //luokittelee kädet
+    public HandComparer(int phase)
+    {
+        comparetype = phase;
+        if (comparetype == 2) cardlist = new List<char> {'A','K','Q','T','9','8','7','6','5','4','3','2','J'};  //ei varmaan tyylikästä määritellä tätä täällä, mutta olkoon
+    }
+
+    static int ClassifyHand(string hand, int comparetype) //luokittelee kädet
         {
             var cards = new List<char>();
             foreach(var character in hand) cards.Add(character);
@@ -22,6 +29,19 @@ public class HandComparer : IComparer<(string,int)>
             //kaksi paria = 4
             //pari = 5
             //hai = 6
+
+            if (comparetype == 2)
+            {
+                //mitä ei-jokerikorttia on eniten?
+                (char,int) mostcommon = ('J',0);
+                foreach(var card in cardlist)
+                {
+                    if (card == 'J') continue;
+                    int handcard = cards.Count(value => value == card);   //mitä ei-jokerikorttia on eniten?
+                    if (handcard > mostcommon.Item2) mostcommon = (card, handcard);
+                }
+                cards = string.Concat(cards).Replace('J',mostcommon.Item1).ToList<char>();
+            }
 
             int cardtypes = cards.Distinct().Count();   //montako erilaista korttia on
 
@@ -49,8 +69,8 @@ public class HandComparer : IComparer<(string,int)>
             int class1, class2;
             string hand1 = handtuple1.Item1;
             string hand2 = handtuple2.Item1;
-            class1 = ClassifyHand(hand1);
-            class2 = ClassifyHand(hand2);
+            class1 = ClassifyHand(hand1, comparetype);
+            class2 = ClassifyHand(hand2, comparetype);
 
             if (class1 > class2) return -1;
             if (class2 > class1) return 1;
@@ -69,7 +89,6 @@ partial class Program
 {
     static int Day7(int phase, string datafile)
     {
-        
 
         string[] lines = [];
         int result = 0;
@@ -101,7 +120,7 @@ partial class Program
             list_cards.Add((split_line[0],int.Parse(split_line[1])));
         }
 
-        list_cards.Sort(new HandComparer());    //lajittelee heikoimman ensiksi
+        list_cards.Sort(new HandComparer(phase));    //lajittelee heikoimman ensiksi
 
         for (int i = 0; i<list_cards.Count;i++) result += list_cards[i].Item2 * (i+1);
 
