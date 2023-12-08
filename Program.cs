@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Numerics;
 
 partial class Program
 {
@@ -22,30 +23,30 @@ partial class Program
         int day = int.Parse(args[0]);
         int phase = int.Parse(args[1]);
         string datafile = args[2];
-        int result = -1;
+        BigInteger result = -1;
         timer.Start();
         switch (day)
         {
             case 1:
-                result = Day1(phase, datafile);
+                result = (BigInteger)Day1(phase, datafile);
                 break;
             case 2:
-                result = Day2(phase, datafile);
+                result = (BigInteger)Day2(phase, datafile);
                 break;
             case 3:
-                result = Day3(phase, datafile);
+                result = (BigInteger)Day3(phase, datafile);
                 break;
             case 4:
-                result = Day4(phase, datafile);
+                result = (BigInteger)Day4(phase, datafile);
                 break;
             case 5:
-                result = Day5(phase, datafile);
+                result = (BigInteger)Day5(phase, datafile);
                 break;
             case 6:
-                result = Day6(phase, datafile);
+                result = (BigInteger)Day6(phase, datafile);
                 break;
             case 7:
-                result = Day7(phase, datafile);
+                result = (BigInteger)Day7(phase, datafile);
                 break;
             case 8:
                 result = Day8(phase, datafile);
