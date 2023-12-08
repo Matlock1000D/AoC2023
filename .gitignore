@@ -2,3 +2,4 @@
 /obj
 /data
 /.vscode
+.vscode/launch.json
