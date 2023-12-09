@@ -58,12 +58,24 @@ partial class Program
             }
             
             //ja takaisinpäin
-            for(int i = sequencesolver.Count-3;i >= 0;i--)
+            if (phase == 1)
             {
-                int diff = sequencesolver[i+1].Last();
-                sequencesolver[i].Add(sequencesolver[i][sequencesolver[i].Count-1] + diff);
+                for(int i = sequencesolver.Count-3;i >= 0;i--)
+                {
+                    int diff = sequencesolver[i+1].Last();
+                    sequencesolver[i].Add(sequencesolver[i][sequencesolver[i].Count-1] + diff);
+                }
+                result += sequencesolver[0][sequencesolver[0].Count-1];
             }
-            result += sequencesolver[0][sequencesolver[0].Count-1];
+            else
+            {
+                for(int i = sequencesolver.Count-3;i >= 0;i--)
+                {
+                    int diff = sequencesolver[i+1].First();
+                    sequencesolver[i].Insert(0,sequencesolver[i][0] - diff);
+                }
+                result += sequencesolver[0][0];
+            }
         }
         
         return result;
