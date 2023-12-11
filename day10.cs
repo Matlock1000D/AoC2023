@@ -2,6 +2,7 @@ namespace AoC2023;
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO.Compression;
 using System.Numerics;
 using System.Text;
 
@@ -44,6 +45,23 @@ partial class Program
             pipemap[i] = line.ToCharArray();
         }
 
+        var goodloopmap = new char[lines.Length,lines[0].Length];     //tehdään kartta siitä, missä hyvä silmukka menee
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            for (int j=0; j<lines[0].Length; j++)
+            goodloopmap[i,j] = '.';
+        }
+
+        var nestpos = new char[lines.Length,lines[0].Length];     //tehdään kartta siitä, missä pesä voi olla
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            for (int j=0; j<lines[0].Length; j++)
+            nestpos[i,j] = ' ';
+        }
+
+
         //etsitään aloituspaikka (y,x)
         (int,int)start_point = (0,0);
 
@@ -61,6 +79,7 @@ partial class Program
         int looplength = 0;
         int[] position = [start_point.Item1,start_point.Item2];
         int tries = 0;
+        goodloopmap[start_point.Item1,start_point.Item2] = 'S';
 
         //lähdetään seuraamaan silmukkaa
         while(true)
@@ -74,6 +93,8 @@ partial class Program
             char hereitem = '.';
             if (x < 0 || y < 0 || y > maxy || x >maxx) badroute = true; //on jouduttu pois kartalta
             else hereitem = pipemap[y][x];
+
+            goodloopmap[y,x] = hereitem;   //tehdään tätä nyt samalla vaivalla, tarvitsee kakkoskohdassa
             
             if (dir[0] == -1)
             {
@@ -88,6 +109,7 @@ partial class Program
                     dir[0] = 0;
                     dir[1] = 1;
                 }
+                goodloopmap[y,x] = 'O';
             }
             else if (dir[0] == 1)
             {
@@ -102,6 +124,7 @@ partial class Program
                     dir[0] = 0;
                     dir[1] = 1;
                 }
+                goodloopmap[y,x] = 'V';
             }
             else if (dir[1] == 1)
             {
@@ -110,11 +133,14 @@ partial class Program
                 {
                     dir[0] = 1;
                     dir[1] = 0;
+                    goodloopmap[y,x] = 'V';
+
                 }
                 else if (hereitem == 'J')
                 {
                     dir[0] = -1;
                     dir[1] = 0;
+                    goodloopmap[y,x] = 'O';
                 }
             }
             else if (dir[1] == -1)
@@ -124,15 +150,51 @@ partial class Program
                 {
                     dir[0] = 1;
                     dir[1] = 0;
+                    goodloopmap[y,x] = 'O';
                 }
                 else if (hereitem == 'L')
                 {
                     dir[0] = -1;
                     dir[1] = 0;
+                    goodloopmap[y,x] = 'V';
                 }
             }
 
-            if (hereitem == 'S') return looplength/2; //jos on palattu alkuun = voitto!
+            if (hereitem == 'S') 
+            {
+                if (phase == 1) return looplength/2; //jos on palattu alkuun = voitto!
+                //Muuten selvitetään mahdolliset pesäpaikat
+                for (int i=0; i<=maxy; i++)
+                {
+                    for (int j=0; j<=maxx; j++) if (goodloopmap[i,j] != '.') nestpos[i,j] = ' ';
+                }
+                char currentside = '?';   //kumpi puoli on ulkopuoli
+                for (int i=0; i<=maxy; i++)
+                {
+                    for (int j=0; j<=maxx; j++)
+                    {
+                        if (goodloopmap[i,j] == '.') nestpos[i,j] = currentside;
+                        if (goodloopmap[i,j] == 'V' || goodloopmap[i,j] == 'O') currentside = goodloopmap[i,j];
+                    }
+                }
+                char inside = ' ';
+                if (currentside == 'V') inside = 'O';
+                else inside = 'V';
+                for (int i=0; i<=maxy; i++)
+                {
+                    for (int j=0; j<=maxx; j++) Console.Write(goodloopmap[i,j]);
+                    Console.WriteLine("");
+                    for (int j=0; j<=maxx; j++) if (nestpos[i,j] == inside) result++;
+                }
+                Console.WriteLine("");
+                for (int i=0; i<=maxy; i++)
+                {
+                    for (int j=0; j<=maxx; j++) Console.Write(nestpos[i,j]);
+                    Console.WriteLine("");
+                    //for (int j=0; j<maxx; j++) if (nestpos[i,j] == inside) result++;
+                }
+                return result;
+            }
 
             if (badroute)   //resetoidaan tilanne ja yritetään eri suuntaa, jos valittu reitti ei ollut silmukka
             {
@@ -140,6 +202,16 @@ partial class Program
                 position[1] = start_point.Item2;
                 looplength = 0;
                 tries++;
+                if (phase == 2) //resetoidaan hyvän luupin kartta
+                {
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        for (int j=0; j<lines[0].Length; j++)
+                        goodloopmap[i,j] = '.';
+                    }
+                    goodloopmap[start_point.Item1,start_point.Item2] = 'S';
+
+                }
                 switch (tries)
                 {
                     case 1:
