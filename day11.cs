@@ -100,16 +100,19 @@ partial class Program
         foreach (var emptycol in emptycols)
         {
             //yhden tyhjän sarakkeen vaikutus kokonaisuuteen on (sarakkeen vasemmalla puolella olevat tähdet) * (sarakkeen oikealla puolella olevat tähdet)
-            int expansionco = starlist.Count(x => x.Item2 < emptycol) * starlist.Count(x => x.Item2 > emptycol);
-            result += expansionco;
+            BigInteger expansionco = starlist.Count(x => x.Item2 < emptycol) * starlist.Count(x => x.Item2 > emptycol);
+            if (phase == 1) result += expansionco;
+            else result += 999999*expansionco;
         }
 
         //huomioidaan tyhjät rivit
         foreach (var emptyrow in emptyrows)
         {
             //yhden tyhjän rivin vaikutus kokonaisuuteen on (sarakkeen vasemmalla puolella olevat tähdet) * (sarakkeen oikealla puolella olevat tähdet)
-            int expansionco = starlist.Count(x => x.Item1 < emptyrow) * starlist.Count(x => x.Item1 > emptyrow);
-            result += expansionco;
+            BigInteger expansionco = starlist.Count(x => x.Item1 < emptyrow) * starlist.Count(x => x.Item1 > emptyrow);
+            if (phase == 1) result += expansionco;
+            else result += 999999*expansionco;
+
         }
     
         return result;
