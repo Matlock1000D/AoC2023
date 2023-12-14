@@ -1,27 +1,24 @@
 namespace AoC2023;
 
 using System.Collections.Generic;
-using System.Collections;
 using System.Numerics;
 using System.Text;
 
 partial class Program
 {
 
-    static Dictionary<(string, int),int> knownresults = [];
-    static int hits = 0;
+    static Dictionary<(string, string),BigInteger> knownresults = [];
 
-    static int CheckSpring(string orig_springs, List<int> orig_springnums)
+    static BigInteger CheckSpring(string orig_springs, List<int> orig_springnums)
     {
         int combinations = 0;
 
         var springs = orig_springs.TrimStart('.');     //turhaa, mutta olkoon varuiksi
         var springnums = orig_springnums.ToList();
-        var springnums_arr = StructuralComparisons.StructuralEqualityComparer.GetHashCode(springnums);
+        var springnums_arr = string.Join(",", springnums);
 
-        if (knownresults.TryGetValue((springs, springnums_arr), out int value))
+        if (knownresults.TryGetValue((springs, springnums_arr), out BigInteger value))
         {
-            hits++;
             return value;
         }
 
@@ -57,7 +54,7 @@ partial class Program
                 if (i+springnums[0] > springs.Length)
                 {
                     knownresults.Add((springs,springnums_arr),0);
-                    return 0; //jouset eivät enää mahdu, tarkastelta jono on mahdoton
+                    return 0; //jouset eivät enää mahdu, tarkasteltava jono on mahdoton
                 }
 
                 var nextset = springs.Substring(i,springnums[0]);
@@ -75,7 +72,7 @@ partial class Program
                         knownresults.Add((springs,springnums_arr),0);
                         return 0; //jousijono on liian pitkä, tarkasteltava jono on mahdoton
                     } 
-                    nextstring = springs.Substring(i+springnums[0]+1);   //jatketaan tarkastelua seuraavasta jonosta
+                    nextstring = springs[(i + springnums[0] + 1)..];   //jatketaan tarkastelua seuraavasta jonosta
                 }
                 else nextstring = "";
                 // heitetään pois listan ensimmäinen luku
@@ -104,7 +101,7 @@ partial class Program
                 string nextstring;
                 if (i+springnums[0] > springs.Length) nextstring = "";
                 else nextstring = springs.Substring(i+1);
-                int result = CheckSpring($"#{nextstring}",springnums) + CheckSpring($".{nextstring}",springnums);
+                BigInteger result = CheckSpring($"#{nextstring}",springnums) + CheckSpring($".{nextstring}",springnums);
                 knownresults.Add((springs,springnums_arr),result);
                 return result;
             }
@@ -153,16 +150,19 @@ partial class Program
             foreach(var springnum in str_springnums) springnums.Add(int.Parse(springnum));
             if (phase == 2)
             {
+                var orig_springs = springnums;
                 for (int i = 0;i<4;i++)
                 {
-                    springnums = springnums.Concat(springnums).ToList();
+
+                    springnums = springnums.Concat(orig_springs).ToList();
                 }
             }
             springs = springs.TrimStart('.').TrimEnd('.');
             result += CheckSpring(springs,springnums);
-            if (phase == 2) Console.WriteLine(i1);
         }
 
         return result;
     }
 }
+
+//24373910602 väärin
