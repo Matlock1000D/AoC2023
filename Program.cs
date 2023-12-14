@@ -63,6 +63,9 @@ partial class Program
             case 12:
                 result = Day12(phase, datafile);
                 break;
+            case 13:
+                result = Day13(phase, datafile);
+                break;
         }
 
         timer.Stop();
