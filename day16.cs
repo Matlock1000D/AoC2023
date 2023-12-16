@@ -88,50 +88,65 @@ partial class Program
         int maxy = lines.Length;
         int maxx = lines[0].Length;
 
-        var cavemap = new char[maxy,maxx];
-        for (int i=0;i<maxy;i++)
+        var cavemap = new char[maxy, maxx];
+        for (int i = 0; i < maxy; i++)
         {
-            for (int j=0;j<maxx;j++)
+            for (int j = 0; j < maxx; j++)
             {
-                cavemap[i,j] = lines[i][j];
+                cavemap[i, j] = lines[i][j];
             }
         }
 
-        int[,] energymap = new int[maxy,maxx]; 
 
-        var beams = new List<Beam>();   //lista säteistä
-        beams.Add(new Beam(0,0,(0,1))); //alustetaan ensimmäinen säde
-
-        while (beams.Count > 0)
+        var startconfigurations = new List<(int,int,(int,int))>();
+        if (phase == 1) startconfigurations.Add((0,0,(0,1)));
+        else
         {
-            for (int i = 0; i < beams.Count; i++)
-            {
-                Beam beam = beams[i];
-                //tarkistetaan ollaanko kartalla
-                if (beam.x < 0 || beam.x >= maxx || beam.y <0 || beam.y >= maxy)
-                {
-                    beams.RemoveAt(i);
-                    i--;
-                    continue;
-                }
-
-                //jos tästä on jo menty samaan suuntaan, säteen voi poistaa
-                if ((energymap[beam.y,beam.x] & directiondict[beam.direction]) > 0)
-                {
-                    beams.RemoveAt(i);  //ei kaunista, varmaan pitäisi tehdä metodilla
-                    i--;
-                    continue;
-                }
-                energymap[beam.y,beam.x] = energymap[beam.y,beam.x] | directiondict[beam.direction];
-                beam.HitTile(cavemap[beam.y,beam.x],beams);
-                beam.Move();
-
-            }
+            for (var i=0;i<maxy;i++) startconfigurations.Add((i,0,(0,1)));
+            for (var i=0;i<maxx;i++) startconfigurations.Add((maxy-1,i,(-1,0)));
+            for (var i=0;i<maxy;i++) startconfigurations.Add((i,maxx-1,(0,-1)));
+            for (var i=0;i<maxx;i++) startconfigurations.Add((0,i,(1,0)));
         }
 
-        //tarkistetaan energisoitujen ruutujen määrä
-        result = energymap.Cast<int>().Count(x => x>0);
+        foreach((int,int,(int,int)) startconfiguration in startconfigurations)
+        {
+            int[,] energymap = new int[maxy, maxx];
+            var beams = new List<Beam>();   //lista säteistä
+            beams.Add(new Beam(startconfiguration.Item1,startconfiguration.Item2,startconfiguration.Item3));
+            NewMethod(directiondict, maxy, maxx, cavemap, energymap, beams);
+            int subresult = energymap.Cast<int>().Count(x => x > 0);
+            if (subresult > result) result = subresult;
+        }
 
         return result;
-    } 
+
+        static void NewMethod(Dictionary<(int, int), int> directiondict, int maxy, int maxx, char[,] cavemap, int[,] energymap, List<Beam> beams)
+        {
+            while (beams.Count > 0)
+            {
+                for (int i = 0; i < beams.Count; i++)
+                {
+                    Beam beam = beams[i];
+                    //tarkistetaan ollaanko kartalla
+                    if (beam.x < 0 || beam.x >= maxx || beam.y < 0 || beam.y >= maxy)
+                    {
+                        beams.RemoveAt(i);
+                        i--;
+                        continue;
+                    }
+
+                    //jos tästä on jo menty samaan suuntaan, säteen voi poistaa
+                    if ((energymap[beam.y, beam.x] & directiondict[beam.direction]) > 0)
+                    {
+                        beams.RemoveAt(i);  //ei kaunista, varmaan pitäisi tehdä metodilla
+                        i--;
+                        continue;
+                    }
+                    energymap[beam.y, beam.x] = energymap[beam.y, beam.x] | directiondict[beam.direction];
+                    beam.HitTile(cavemap[beam.y, beam.x], beams);
+                    beam.Move();
+                }
+            }
+        }
+    }
 }
