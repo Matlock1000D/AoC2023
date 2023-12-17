@@ -1,8 +1,8 @@
 namespace AoC2023;
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 
 partial class Program
 {
@@ -11,23 +11,6 @@ partial class Program
     {
         string[] lines = [];
         BigInteger result = 0;
-        //tähänkin olisi elegantimpi ratkaisu matriiseilla, mutta kokeillaan nyt näin
-        var turn_left = new Dictionary<(int, int), (int, int)>
-        {
-            {(1,0),(0,1)},
-            {(0,1),(-1,0)},
-            {(-1,0),(0,-1)},
-            {(0,-1),(1,0)}
-        };
-
-        var turn_right = new Dictionary<(int, int), (int, int)>
-        {
-            {(1,0),(0,-1)},
-            {(0,-1),(-1,0)},
-            {(-1,0),(0,1)},
-            {(0,1),(1,0)}
-        };
-
 
         if (File.Exists(datafile))
         {
@@ -61,120 +44,113 @@ partial class Program
             }
         }
 
-        //suoraan menevän reitin maksimi = (maxy+maxx-2)*9, tätä kalliimpia reittejä ei kannata jatkaa
+        //alustetaan "käännösmatriisit"
 
-        (int,int) position =(0,0);  //(y,x)
-        int straight = 0;
-        (int,int) direction = (0,1);
-        int heatloss = 0;
-        bool goal = false;
-        int minheat = 0;
-
-        //haetaan minheatille joku yläraja. Ei välttämättä tismalleen oikea, mutta varmaan riittävän hyvä.
-        //tällä voidaan lakata seuraamasta turhan kiemuraisia reittejä alussa
-        for (var i=0;i<maxx;i++) if (i%4 != 3) minheat += cavemap[0,i];
-        for (var i=2;i<maxx;i++) if (i%4 != 1) minheat += cavemap[1,i];
-        for (var i=0;i<maxy;i++) if (i%4 != 3) minheat += cavemap[i,maxx-1];
-        for (var i=2;i<maxy;i++) if (i%4 != 1) minheat += cavemap[i,maxx-2];
-
-        //Koostukoon reitti kirjaimista (E)teen, (L)eft ja (R)ight
-        //jos nämä järjestetään aakkosjärjestykseen, ensimmäinen mahdollinen reitti on
-        //EEELREEEREEELEEER...
-        //U-käännökset ovat turhia, eli LL- ja RR-päätteisiä reittejä ei kannata tutkia
-        
-        //konstruoidaan ensimmäinen reitti
-
-        char forbidden = 'A';
-        var routebuilder = new List<(char, (int, int), int, (int,int))> //komento, (position), heatloss, (direction)
+        var turn_left = new Dictionary<(int, int), (int, int)>
         {
-            ('E', (0, 0), 0, direction)
+            {(1,0),(0,1)},
+            {(0,1),(-1,0)},
+            {(-1,0),(0,-1)},
+            {(0,-1),(1,0)}
         };
-        List<(char, (int, int), int, (int,int))> bestroute;    //debuggaustarkoituksiin
 
-        while (!goal)
+        var turn_right = new Dictionary<(int, int), (int, int)>
         {
-            bool nextroute = false;
-            
-            var newpos = (position.Item1 + direction.Item1,position.Item2 + direction.Item2);
-            var newpos_left = (position.Item1 + turn_left[direction].Item1,position.Item2 + turn_left[direction].Item2);
-            var newpos_right = (position.Item1 + turn_right[direction].Item1,position.Item2 + turn_right[direction].Item2);
-            if (forbidden < 'E' && straight < 3 && newpos.Item1 >= 0 && newpos.Item1 < maxy && newpos.Item2 >= 0 && newpos.Item2 < maxx)
-            {
-                heatloss += cavemap[newpos.Item1,newpos.Item2];
-                routebuilder.Add(('E',newpos, heatloss, direction));
-                position = newpos;
-                forbidden = 'A';
-                straight++;
-                if (heatloss >= minheat) nextroute = true;
-            }
-            else if (forbidden < 'L' && (routebuilder.Count == 0 || routebuilder.Last().Item1 != 'L') && position.Item2 < maxx-1 && newpos_left.Item1 >= 0 && newpos_left.Item1 < maxy && newpos_left.Item2 >= 0 && newpos_left.Item2 < maxx)
-            {
-                heatloss += cavemap[newpos_left.Item1,newpos_left.Item2];
-                direction = turn_left[direction];
-                routebuilder.Add(('L',newpos_left, heatloss, direction));
-                position = newpos_left;
-                forbidden = 'A';
-                straight = 1;
-                if (heatloss >= minheat) nextroute = true;
+            {(1,0),(0,-1)},
+            {(0,-1),(-1,0)},
+            {(-1,0),(0,1)},
+            {(0,1),(1,0)}
+        };
 
-            }
-            else if (forbidden < 'R' && (routebuilder.Count == 0 || routebuilder.Last().Item1 != 'R') && position.Item1 < maxy-1&& newpos_right.Item1 >= 0 && newpos_right.Item1 < maxy && newpos_right.Item2 >= 0 && newpos_right.Item2 < maxx)
-            {
-                heatloss += cavemap[newpos_right.Item1,newpos_right.Item2];
-                direction = turn_right[direction];
-                routebuilder.Add(('R',newpos_right, heatloss, direction));
-                position = newpos_right;
-                forbidden = 'A';
-                straight = 1;
-                if (heatloss >= minheat) nextroute = true;
-            }
-            else
-            {
-                nextroute = true;
-            }
-            //tarkista, ollaanko menossa jo vierailtuun ruutuun = (todennäköisesti) turha reitti
-            //mennään takaperin, koska on todennäköisempää törmätä lähellä kuin kaukana jonossa oleviin ruutuihin
-            if (!nextroute)
-            {
-                for (var i=routebuilder.Count-4; i>=0;i--)
-                {
-                    if (position == routebuilder[i].Item2)
-                    {
-                        nextroute = true;
-                        break;
-                    }
-                }
-            }
-            //ollaanko maalissa?
-            if (position.Item1 == maxy-1 && position.Item2 == maxx-1)
-            {
-                if (heatloss < minheat) 
-                {
-                    minheat = heatloss;
-                    bestroute = [.. routebuilder];
-                }
-                nextroute = true;
-            }
 
-            if (nextroute)
+        var route = new List<((int,int), int, int, (int, int), int)>();  //position, heatloss, straightsteps, direction, f
+        route.Add(((0,0),0,0,(1,0),maxx+maxy-2));   //alustetaan lista
+
+        //ruvetaan menemään A*-algoritmin mukaan
+
+        while (true)
+        {
+            //valitaan alkio, jolla on pienin heatloss-arvo
+            //poistetaan alkio listasta
+            var minheat_node = route[0];
+            route.RemoveAt(0);
+
+            //ollaanko tultu maaliin?
+            if (minheat_node.Item1 == (maxy-1,maxx-1))
             {
-                if (heatloss != routebuilder.Last().Item3) throw new Exception("Heatloss desync!");
-                forbidden = routebuilder.Last().Item1;
-                heatloss -= cavemap[position.Item1,position.Item2];
-                routebuilder.RemoveAt(routebuilder.Count-1);
-                try
-                {
-                position = routebuilder.Last().Item2;
-                direction = routebuilder.Last().Item4;
-                }
-                catch
-                {
-                    goal = true;
-                }
-                if (routebuilder.Count == 0 && forbidden == 'R') goal = true; 
+                result = minheat_node.Item2;
+                break;
+            }
+            //jos ei, generoidaan seuraavat noodit
+            //suoraan
+            if (minheat_node.Item3 < 3)
+            {
+                var direction = minheat_node.Item4;
+                var position = minheat_node.Item1;
+                var nextpos = (position.Item1 + direction.Item1, position.Item2 + direction.Item2);
+                NextNode(maxy, maxx, cavemap, route, minheat_node, direction, position, nextpos, true);
+            }
+            //vasemmalle
+            {
+                var direction = turn_left[minheat_node.Item4];
+                var position = minheat_node.Item1;
+                var nextpos = (position.Item1 + direction.Item1, position.Item2 + direction.Item2);
+                NextNode(maxy, maxx, cavemap, route, minheat_node, direction, position, nextpos, false);
+            }
+            //oikealle
+            {
+                var direction = turn_right[minheat_node.Item4];
+                var position = minheat_node.Item1;
+                var nextpos = (position.Item1 + direction.Item1, position.Item2 + direction.Item2);
+                NextNode(maxy, maxx, cavemap, route, minheat_node, direction, position, nextpos, false);
             }
         }
 
-        return minheat;
+        return result;
+    }
+
+    private static void NextNode(int maxy, int maxx, int[,] cavemap, List<((int, int), int, int, (int, int), int)> route, ((int, int), int, int, (int, int), int) minheat_node, (int, int) direction, (int, int) position, (int, int) nextpos, bool isstraight)
+    {
+        if (Goodpos(nextpos, maxy, maxx))
+        {
+            var heatval = minheat_node.Item2 + cavemap[nextpos.Item1, nextpos.Item2];
+            int straight;
+            if (isstraight) straight = minheat_node.Item3 + 1;
+            else straight = 1;
+            var t = maxy - nextpos.Item1 - 1 + maxx - nextpos.Item2 - 1;
+            var f = t + heatval;
+            if (!route.Any(x => x.Item1 == nextpos && x.Item4 == x.Item4 && x.Item3 <= straight && x.Item2 <= heatval))
+            {
+                bool notbiggest = false;
+                for (var i = 0; i < route.Count; i++)
+                {
+                    if (f < route[i].Item5)
+                    {
+                        route.Insert(i, (nextpos, heatval, straight, direction, f));
+                        notbiggest = true;
+                        break;
+                    }
+                    else if(f == route[i].Item5 && heatval > route[i].Item2)
+                    {
+                        route.Insert(i, (nextpos, heatval, straight, direction, f));
+                        notbiggest = true;
+                        break;
+                    }
+                }
+                if (!notbiggest) route.Add((nextpos, heatval, straight, direction, f));
+            }
+        }
+    }
+
+    private static bool Goodpos((int, int) nextpos, int maxy, int maxx)
+    {
+        if (nextpos.Item1 >= maxy || nextpos.Item2 >= maxx || nextpos.Item1 < 0 || nextpos.Item2 < 0) return false;
+        return true;
     }
 }
+
+//748 liian korkea
+//741 tietysti liian korkea
+//732 liian korkea
+//729 liian korkea
+//727 liian korkea
