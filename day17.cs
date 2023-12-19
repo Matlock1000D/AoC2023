@@ -2,7 +2,7 @@ namespace AoC2023;
 
 using System;
 using System.Collections.Generic;
-using System.IO.Compression;
+using System.Collections.Specialized;
 using System.Numerics;
 
 partial class Program
@@ -99,37 +99,41 @@ partial class Program
             graph[(1,maxy-1,maxx-1)].Add((-1,0,0),0);
         }
 
+        var graph_route = new Dictionary<(int,int,int),(int,int)>();
+        graph_route.Add((-1, -1, -1), (0, maxy + maxx));
+        /*
         var graph_route = new List<((int, int, int), int, int)>
         {
             ((-1, -1, -1), 0, maxy + maxx)
         };  //node address, heatloss, f
+        */
 
         //jummijammi, sitten A* käyntiin
         if (phase == 2)
         {
             while (true)
             {
-                int minval = graph_route.Min(x => x.Item3);
-                int minindex = graph_route.FindIndex(x => x.Item3 == minval);
-                var minheat_node = graph_route[minindex];  //(noodin id), heatloss, f 
-                graph_route.RemoveAt(minindex);
+                int minval = graph_route.Min(x => x.Value.Item2);
+                var mincosts = graph_route.Where(x => x.Value.Item2 == minval).ToDictionary(x => x.Key, x => x.Value);
+                int maxloss = mincosts.Max(x=> x.Value.Item1);
+                var minheat_node = mincosts.FirstOrDefault(x => x.Value.Item1 == maxloss);
+                graph_route.Remove(minheat_node.Key);
 
                 //ollaanko tultu maaliin?
-                if (minheat_node.Item1 == (-1,0,0))
+                if (minheat_node.Key == (-1,0,0))
                 {
-                    return (BigInteger)minheat_node.Item2;
+                    return (BigInteger)minheat_node.Value.Item1;
                 }
                 //jos ei, jatketaan
-                foreach (var nextnode in graph[minheat_node.Item1])
+                foreach (var nextnode in graph[minheat_node.Key])
                 {
-                    var heatloss = minheat_node.Item2 + nextnode.Value;
+                    var heatloss = minheat_node.Value.Item1 + nextnode.Value;
                     var f = heatloss + GetDist(maxy, maxx, nextnode); //nykyisen noden heatloss + liikkumiskustannus + Manhattan-etäisyys maalista
                     //katsotaan, onko seuraava noodi -tarjokas jo listassa
-                    if (!graph_route.Any(x => x.Item1 == nextnode.Key && x.Item3 <= f))
+                    if (!(graph_route.TryGetValue(nextnode.Key, out (int, int) value) && value.Item2 <= f))
                     {
                         //lisätään noodi listaan
-                        var position = nextnode.Key;
-                        graph_route.Add((position, heatloss, f));
+                        graph_route[nextnode.Key] = (heatloss, f);
                     }
                 }
             }
@@ -319,3 +323,4 @@ partial class Program
 //727 liian korkea
 
 //901 liikaa
+//927 liikaa
