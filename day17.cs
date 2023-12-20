@@ -109,7 +109,6 @@ partial class Program
         */
 
         //jummijammi, sitten A* käyntiin
-        /*
         if (phase == 2)
         {
             while (true)
@@ -139,7 +138,6 @@ partial class Program
                 }
             }
         }
-        */
         //alustetaan "käännösmatriisit"
 
         var turn_left = new Dictionary<(int, int), (int, int)>
