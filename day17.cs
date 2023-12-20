@@ -47,7 +47,8 @@ partial class Program
 
         //tehdään graafi
         var graph = new Dictionary<(int,int,int),Dictionary<(int,int,int),int>>();  //kerros 0: vaakasuorat liikkeet, kerros 7, pystysuorat
-        int maxstraights = 10+1-(4-1);
+        const int minstraights = 4;
+        const int maxstraights = 12+1-(minstraights-1); //en tiedä miksi tämä toimii, mutta se toimii ^^;
         if (phase == 2)
         {
             //vaakasuuntaiset liikkeet
@@ -57,7 +58,7 @@ partial class Program
                     for (var k=0;k<maxx;k++)
                     {
                         graph.Add((0,j,k),new Dictionary<(int,int,int),int>());
-                        for (var l=4;l<=maxstraights;l++)
+                        for (var l=minstraights;l<=maxstraights;l++)
                         {   
                             if (GoodNode(maxy, maxx, j, k+l))
                             {
@@ -72,7 +73,7 @@ partial class Program
                 }            
             }
             //pystysuuntaiset liikkeet
-                        {
+            {
                 for (var j=0;j<maxy;j++)
                 {
                     for (var k=0;k<maxx;k++)
@@ -99,8 +100,8 @@ partial class Program
             graph[(1,maxy-1,maxx-1)].Add((-1,0,0),0);
         }
 
-        var graph_route = new Dictionary<(int,int,int),(int,int)>();
-        graph_route.Add((-1, -1, -1), (0, maxy + maxx));
+        var priority_queue = new Dictionary<(int,int,int),(int,int)>();
+        priority_queue.Add((-1, -1, -1), (0, maxy + maxx));
         /*
         var graph_route = new List<((int, int, int), int, int)>
         {
@@ -111,33 +112,44 @@ partial class Program
         //jummijammi, sitten A* käyntiin
         if (phase == 2)
         {
-            while (true)
-            {
-                int minval = graph_route.Min(x => x.Value.Item2);
-                var mincosts = graph_route.Where(x => x.Value.Item2 == minval).ToDictionary(x => x.Key, x => x.Value);
-                int maxloss = mincosts.Max(x=> x.Value.Item1);
-                var minheat_node = mincosts.FirstOrDefault(x => x.Value.Item1 == maxloss);
-                graph_route.Remove(minheat_node.Key);
+            BigInteger subresult = Int32.MaxValue;
+            bool done = false;
 
-                //ollaanko tultu maaliin?
-                if (minheat_node.Key == (-1,0,0))
+            while (!done)
+            {
+                int minval = priority_queue.Min(x => x.Value.Item2);   //etsitään pienin f:n arvo
+                var mincosts = priority_queue.Where(x => x.Value.Item2 == minval).ToDictionary(x => x.Key, x => x.Value); //mincostsissa on kaikki pienimmäm f-arvon alkiot
+                //koska nollan hintaisia kaaria ei ole, voidaan käydä läpi kaikki mincostsin oliot.
+                foreach(var minheat_node in mincosts)
                 {
-                    return (BigInteger)minheat_node.Value.Item1;
-                }
-                //jos ei, jatketaan
-                foreach (var nextnode in graph[minheat_node.Key])
-                {
-                    var heatloss = minheat_node.Value.Item1 + nextnode.Value;
-                    var f = heatloss + GetDist(maxy, maxx, nextnode); //nykyisen noden heatloss + liikkumiskustannus + Manhattan-etäisyys maalista
-                    //katsotaan, onko seuraava noodi -tarjokas jo listassa
-                    if (!(graph_route.TryGetValue(nextnode.Key, out (int, int) value) && value.Item2 <= f))
+                    priority_queue.Remove(minheat_node.Key);   //poistetaan minheat_node prioriteettilistasta 
+
+                    //ollaanko tultu maaliin?
+                    if (minheat_node.Key == (-1,0,0))
                     {
-                        //lisätään noodi listaan
-                        graph_route[nextnode.Key] = (heatloss, f);
+                        if(minheat_node.Value.Item1 < subresult) subresult = minheat_node.Value.Item1;
+                        done = true;
+                    }
+                    //jos ei, jatketaan
+                    foreach (var nextnode in graph[minheat_node.Key])
+                    {
+                        var heatloss = minheat_node.Value.Item1 + nextnode.Value;
+                        var f = heatloss + GetDist(maxy, maxx, nextnode); //nykyisen noden heatloss + liikkumiskustannus + Manhattan-etäisyys maalista
+                        //katsotaan, onko seuraava noodi -tarjokas jo listassa
+                        if (priority_queue.TryGetValue(nextnode.Key, out (int, int) value))
+                        {
+                            if (priority_queue[nextnode.Key].Item2 > f) priority_queue[nextnode.Key] = (heatloss, f);                        
+                        }
+                        else
+                        {
+                            priority_queue[nextnode.Key] = (heatloss, f);
+                        }
                     }
                 }
             }
+            return subresult;
         }
+        
         //alustetaan "käännösmatriisit"
 
         var turn_left = new Dictionary<(int, int), (int, int)>
