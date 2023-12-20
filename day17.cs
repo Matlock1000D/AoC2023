@@ -48,7 +48,7 @@ partial class Program
         //tehdään graafi
         var graph = new Dictionary<(int,int,int),Dictionary<(int,int,int),int>>();  //kerros 0: vaakasuorat liikkeet, kerros 7, pystysuorat
         const int minstraights = 4;
-        const int maxstraights = 12+1-(minstraights-1); //en tiedä miksi tämä toimii, mutta se toimii ^^;
+        const int maxstraights = 10; //en tiedä miksi tämä toimii, mutta se toimii ^^;
         if (phase == 2)
         {
             //vaakasuuntaiset liikkeet
