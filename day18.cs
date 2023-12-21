@@ -1,6 +1,8 @@
 namespace AoC2023;
 
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
 
@@ -35,9 +37,66 @@ partial class Program
         foreach (string line in lines)
         {
             var splitline = line.Split(' ');
-            char direction = splitline[0][0];
-            int length = int.Parse(splitline[1]);
+            char direction='U';
+            if (phase == 1) direction = splitline[0][0];
+            else
+            {
+                switch(splitline[2][^2..^1])
+                {
+                    case "0":
+                        direction = 'R';
+                        break;
+                    case "1":
+                        direction = 'D';
+                        break;
+                    case "2":
+                        direction = 'L';
+                        break;
+                    case "3":
+                        direction = 'U';
+                        break;
+                }
+            int length;
+            if (phase == 1) length = int.Parse(splitline[1]);
+            else length = int.Parse(splitline[2][2..^2],NumberStyles.HexNumber);
             digcommands.Add((direction,length));
+            }
+        }
+
+        // Suurimmat yhteiset jakajat
+        int xdivisor = 1;
+        int ydivisor = 1;
+
+        // yritä skaalata kaivuuohjeita
+        if (phase == 2)
+        {
+            // Jaetaan omiin listoihinsa vaaka- ja pystysuorat liikkeet
+            var xlist = new List<int>();
+            var ylist = new List<int>();
+
+            foreach (var digcommand in digcommands)
+            {
+                if (new List<char> {'U','D'}.Contains(digcommand.direction))
+                    ylist.Add(digcommand.direction);
+                else
+                    xlist.Add(digcommand.direction);
+            }
+
+            // Etsitään kummallekin suurin yhteinen jakaja.
+            xdivisor = CustomMaths.Gcd(xlist);
+            ydivisor = CustomMaths.Gcd(ylist);
+
+            // Jaetaan pituudet jakajilla.
+
+            for (int i=0; i<digcommands.Count; i++)
+            {
+                if (new List<char> {'U','D'}
+                .Contains(digcommands[i].direction)) 
+                digcommands[i] = 
+                (digcommands[i].direction, digcommands[i].length/ydivisor);
+                else digcommands[i] = 
+                (digcommands[i].direction, digcommands[i].length/xdivisor);
+            }
         }
         //tehdään kaivuukartta
         int maxx = 0;
@@ -90,10 +149,12 @@ partial class Program
         maxy++;
         
         //luodaan kartta, pitäisi alustua nollaan
-        int[,] lagoonmap = new int[maxy,maxx];
+        bool?[,] lagoonmap = null;
+        
+        lagoonmap = new bool?[maxy,maxx];
         curx = origx;
         cury = origy;
-        lagoonmap[cury,curx] = 1;
+        lagoonmap[cury,curx] = true;
         //piirretään kartta ohjeiden mukaan
         foreach (var digcommand in digcommands)
         {
@@ -114,19 +175,19 @@ partial class Program
                         curx--;
                         break;
                 }
-                lagoonmap[cury,curx] = 1;
+                lagoonmap[cury,curx] = true;
             }
         }
         
         // flood-fill ulkoreunaan
         for (var i=0;i<maxx;i++)
-            if (lagoonmap[0,i] == 0) lagoonmap[0,i] = -1;
+            if (lagoonmap[0,i] == null) lagoonmap[0,i] = false;
         for (var i=0;i<maxy;i++)
-            if (lagoonmap[i,0] == 0) lagoonmap[i,0] = -1;
+            if (lagoonmap[i,0] == null) lagoonmap[i,0] = false;
         for (var i=0;i<maxx;i++)
-            if (lagoonmap[maxy-1,i] == 0) lagoonmap[maxy-1,i] = -1;
+            if (lagoonmap[maxy-1,i] == null) lagoonmap[maxy-1,i] = false;
         for (var i=0;i<maxy;i++)
-            if (lagoonmap[i,maxx-1] == 0) lagoonmap[i,maxx-1] = -1;
+            if (lagoonmap[i,maxx-1] == null) lagoonmap[i,maxx-1] = false;
         
         // flood-fill
         bool filled = true; // lippu jolla katsotaan, onko jotain täytetty
@@ -139,11 +200,11 @@ partial class Program
             {
                 for (var j=1;j<maxx-1;j++)
                 {
-                    if (lagoonmap[i,j] == 0)
+                    if (lagoonmap[i,j] == null)
                     {
-                        if (lagoonmap[i-1,j] == -1 || lagoonmap[i+1,j] == -1 || lagoonmap[i,j+1] == -1 || lagoonmap[i,j-1] == -1)   // jos vierestä löytyy ulkopuolta
+                        if (lagoonmap[i-1,j] == false || lagoonmap[i+1,j] == false || lagoonmap[i,j+1] == false || lagoonmap[i,j-1] == false)   // jos vierestä löytyy ulkopuolta
                         {
-                            lagoonmap[i,j] = -1;
+                            lagoonmap[i,j] = false;
                             filled = true;
                         }
                     }
@@ -151,11 +212,10 @@ partial class Program
             }
         }
         // lasketaan ykkös- ja nollaruudut
-        result = lagoonmap.Cast<int>().Count(x => x != -1);
+        result = lagoonmap.Cast<int>().Count(x => x != -1) *
+        xdivisor * ydivisor;
         return result;
     }
 }
 
-//62848 liian iso
-//katso inputtia
-//piirrä tuloskartta
+//TODO selvitä, voiko taulukon indeksikokoa kasvattaa

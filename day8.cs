@@ -28,18 +28,18 @@ public class CustomMaths
 
         return a;
     }
-    /*public static int Gcd(List<int> numbers)      //eihän tätä tarvitakaan
+    public static int Gcd(List<int> numbers)      //eihän tätä tarvitakaan
     {
         int gcd = int.MaxValue;
         int compare = numbers[0];
         for(int i=1;i<numbers.Count;i++)
         {
-            int pair_gcd = Gcd(compare,numbers[i]);
+            int pair_gcd = (int)Gcd((BigInteger)compare,(BigInteger)numbers[i]);
             if (pair_gcd < gcd) gcd = pair_gcd;
             if (pair_gcd == 1) break;
         }
         return gcd;
-    }*/
+    }
     public static BigInteger Lcm(List<BigInteger> numbers)
     {
         BigInteger lcm = numbers[0];
