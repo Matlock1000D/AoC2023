@@ -5,42 +5,41 @@ using System.Numerics;
 
 public class MegaXmasPart
 {
-    public List<(int min,int max)> xranges;
-    public List<(int min,int max)> mranges;
-    public List<(int min,int max)> aranges;
-    public List<(int min,int max)> sranges;
+    public (int min,int max) xrange;
+    public (int min,int max) mrange;
+    public (int min,int max) arange;
+    public (int min,int max) srange;
 
     public string address;
 
     // Taitaa itse asiassa olla turhaa, että nämä ovat listana, koska epäjatkuvia alueita ei voi tulla
-    // TODO refaktoroi yhdeksi
     public MegaXmasPart(int maxrange)
     {
-        this.xranges = new List<(int min, int max)>{(0,maxrange)};
-        this.mranges = new List<(int min, int max)>{(0,maxrange)};
-        this.aranges = new List<(int min, int max)>{(0,maxrange)};
-        this.sranges = new List<(int min, int max)>{(0,maxrange)};
+        this.xrange = (1,maxrange);
+        this.mrange = (1,maxrange);
+        this.arange = (1,maxrange);
+        this.srange = (1,maxrange);
         address = "in";
     }
 
-    public MegaXmasPart(List<(int min, int max)> xranges, List<(int min, int max)> mranges, List<(int min, int max)> aranges, List<(int min, int max)> sranges, string address)
+    public MegaXmasPart((int min, int max) xrange, (int min, int max) mrange, (int min, int max) arange, (int min, int max) srange, string address)
     {
-        this.xranges = xranges.ToList();
-        this.mranges = mranges.ToList();
-        this.aranges = aranges.ToList();
-        this.sranges = sranges.ToList();
+        this.xrange = xrange;
+        this.mrange = mrange;
+        this.arange = arange;
+        this.srange = srange;
         this.address = address;
     }
 
-    public int MinCount()
+    public bool MinCount()
     {
-        var counts = new List<int>{xranges.Count, mranges.Count, aranges.Count, sranges.Count};
-        return counts.Min();
+        if (xrange.min < 0 || mrange.min < 0 || arange.min < 0 || srange.min < 0) return true;
+        else return false;
     }
 
     public BigInteger Combinations()
     {
-        return (xranges[0].max-xranges[0].min+1)*(mranges[0].max-mranges[0].min+1)*(aranges[0].max-aranges[0].min+1)*(sranges[0].max-sranges[0].min+1);
+        return ((BigInteger)xrange.max-(BigInteger)xrange.min+1)*((BigInteger)mrange.max-(BigInteger)mrange.min+1)*((BigInteger)arange.max-(BigInteger)arange.min+1)*((BigInteger)srange.max-(BigInteger)srange.min+1);
     }
 }
 public class XmasPart
@@ -84,11 +83,11 @@ public class Workflow
         {
             MegaXmasPart? newpart = step.MegaRunStep(megaxmaspart);
             if (newpart != null)
-                newparts.Add(step.MegaRunStep(megaxmaspart));
-            if (megaxmaspart.MinCount() == 0)
+                newparts.Add(newpart);
+            if (megaxmaspart.MinCount())
                 break;
         }
-        if (megaxmaspart.MinCount() > 0 && megaxmaspart.address != "R")
+        if (!megaxmaspart.MinCount() && megaxmaspart.address != "R")
             newparts.Add(megaxmaspart);
 
         return newparts;
@@ -114,224 +113,104 @@ public class WorkflowStep
         // Tämän voisi varmaan tehdä tiiviimminkin
         // esim. olion ominaisuuksiin viittaavan sanakirjan
         // avulla
-        var newranges = new List<(int min, int max)>();
-        var oldranges = new List<(int min, int max)>();
+        (int min, int max) newrange = (-1000, -1001);
+        (int min, int max) oldrange = (-1000, -1001);
 
+        (int min, int max) xrange = (0,0);
         switch (category)
         {
             case 'x':
-                foreach (var xrange in megaxmaspart.xranges)
-                {
-                    int? newrangemin=null, newrangemax=null;
-                    int? oldrangemin=null, oldrangemax=null;
-                    if (rule == '>')
-                    {
-                        if (xrange.max > comparer)
-                        {
-                            newrangemax = xrange.max;
-                            if (xrange.min > comparer)
-                            {
-                                newrangemin = xrange.min;
-                            }
-                            else
-                            {
-                                newrangemin = comparer+1;
-                                oldrangemax = comparer;
-                                oldrangemin = xrange.min;
-                            }
-                        }
-                    }
-                    else if (rule == '<')
-                    {
-                        if (xrange.min < comparer)
-                        {
-                            newrangemin = xrange.min;
-                            if (xrange.max < comparer)
-                            {
-                                newrangemax = xrange.max;
-                            }
-                            else
-                            {
-                                newrangemax = comparer-1;
-                                oldrangemin = comparer;
-                                oldrangemax = xrange.max;
-                            }
-                        }
-                    }
-                    else megaxmaspart.address = target;
-
-                    if (newrangemin != null)
-                        newranges.Add(((int)newrangemin,(int)newrangemax));
-                    if (oldrangemin != null)
-                        oldranges.Add(((int)oldrangemin,(int)oldrangemax));
-                }
-                megaxmaspart.xranges = oldranges.ToList();
-                if (newranges.Count > 0)
-                    return new MegaXmasPart(newranges.ToList(), megaxmaspart.mranges.ToList(), megaxmaspart.aranges.ToList(), megaxmaspart.sranges.ToList(), target);
-                else
-                    return null;
+                xrange = megaxmaspart.xrange;
                 break;
             case 'm':
-                foreach (var mrange in megaxmaspart.mranges)
-                {
-                    int? newrangemin=null, newrangemax=null;
-                    int? oldrangemin=null, oldrangemax=null;
-                    if (rule == '>')
-                    {
-                        if (mrange.max > comparer)
-                        {
-                            newrangemax = mrange.max;
-                            if (mrange.min > comparer)
-                            {
-                                newrangemin = mrange.min;
-                            }
-                            else
-                            {
-                                newrangemin = comparer+1;
-                                oldrangemax = comparer;
-                                oldrangemin = mrange.min;
-                            }
-                        }
-                    }
-                    else if (rule == '<')
-                    {
-                        if (mrange.min < comparer)
-                        {
-                            newrangemin = mrange.min;
-                            if (mrange.max < comparer)
-                            {
-                                newrangemax = mrange.max;
-                            }
-                            else
-                            {
-                                newrangemax = comparer-1;
-                                oldrangemin = comparer;
-                                oldrangemax = mrange.max;
-                            }
-                        }
-                    }
-                    else megaxmaspart.address = target;
-
-                    if (newrangemin != null)
-                        newranges.Add(((int)newrangemin,(int)newrangemax));
-                    if (oldrangemin != null)
-                        oldranges.Add(((int)oldrangemin,(int)oldrangemax));
-                }
-                megaxmaspart.mranges = oldranges.ToList();
-                if (newranges.Count > 0)
-                    return new MegaXmasPart(megaxmaspart.xranges.ToList(), newranges.ToList(), megaxmaspart.aranges.ToList(), megaxmaspart.sranges.ToList(), target);
-                else
-                    return null;
+                xrange = megaxmaspart.mrange;
                 break;
             case 'a':
-                foreach (var arange in megaxmaspart.aranges)
-                {
-                    int? newrangemin=null, newrangemax=null;
-                    int? oldrangemin=null, oldrangemax=null;
-                    if (rule == '>')
-                    {
-                        if (arange.max > comparer)
-                        {
-                            newrangemax = arange.max;
-                            if (arange.min > comparer)
-                            {
-                                newrangemin = arange.min;
-                            }
-                            else
-                            {
-                                newrangemin = comparer+1;
-                                oldrangemax = comparer;
-                                oldrangemin = arange.min;
-                            }
-                        }
-                    }
-                    else if (rule == '<')
-                    {
-                        if (arange.min < comparer)
-                        {
-                            newrangemin = arange.min;
-                            if (arange.max < comparer)
-                            {
-                                newrangemax = arange.max;
-                            }
-                            else
-                            {
-                                newrangemax = comparer-1;
-                                oldrangemin = comparer;
-                                oldrangemax = arange.max;
-                            }
-                        }
-                    }
-                    else megaxmaspart.address = target;
-
-                    if (newrangemin != null)
-                        newranges.Add(((int)newrangemin,(int)newrangemax));
-                    if (oldrangemin != null)
-                        oldranges.Add(((int)oldrangemin,(int)oldrangemax));
-                }
-                megaxmaspart.aranges = oldranges.ToList();
-                if (newranges.Count > 0)
-                    return new MegaXmasPart(megaxmaspart.xranges.ToList(), megaxmaspart.mranges.ToList(), newranges.ToList(), megaxmaspart.sranges.ToList(), target);
-                else
-                    return null;
+                xrange = megaxmaspart.arange;
                 break;
             case 's':
-                foreach (var srange in megaxmaspart.sranges)
-                {
-                    int? newrangemin=null, newrangemax=null;
-                    int? oldrangemin=null, oldrangemax=null;
-                    if (rule == '>')
-                    {
-                        if (srange.max > comparer)
-                        {
-                            newrangemax = srange.max;
-                            if (srange.min > comparer)
-                            {
-                                newrangemin = srange.min;
-                            }
-                            else
-                            {
-                                newrangemin = comparer+1;
-                                oldrangemax = comparer;
-                                oldrangemin = srange.min;
-                            }
-                        }
-                    }
-                    else if (rule == '<')
-                    {
-                        if (srange.min < comparer)
-                        {
-                            newrangemin = srange.min;
-                            if (srange.max < comparer)
-                            {
-                                newrangemax = srange.max;
-                            }
-                            else
-                            {
-                                newrangemax = comparer-1;
-                                oldrangemin = comparer;
-                                oldrangemax = srange.max;
-                            }
-                        }
-                    }
-                    else megaxmaspart.address = target;
+                xrange = megaxmaspart.srange;
+                break;
+        }
 
-                    if (newrangemin != null)
-                        newranges.Add(((int)newrangemin,(int)newrangemax));
-                    if (oldrangemin != null)
-                        oldranges.Add(((int)oldrangemin,(int)oldrangemax));
+        int? newrangemin=null, newrangemax=null;
+        int? oldrangemin=null, oldrangemax=null;
+        if (rule == '>')
+        {
+            if (xrange.max > comparer)
+            {
+                newrangemax = xrange.max;
+                if (xrange.min > comparer)
+                {
+                    newrangemin = xrange.min;
                 }
-                megaxmaspart.sranges = oldranges.ToList();
-                if (newranges.Count > 0)
-                    return new MegaXmasPart(megaxmaspart.xranges.ToList(), megaxmaspart.mranges.ToList(), megaxmaspart.aranges.ToList(), newranges.ToList(), target);
+                else
+                {
+                    newrangemin = comparer+1;
+                    oldrangemax = comparer;
+                    oldrangemin = xrange.min;
+                }
+            }
+        }
+        else if (rule == '<')
+        {
+            if (xrange.min < comparer)
+            {
+                newrangemin = xrange.min;
+                if (xrange.max < comparer)
+                {
+                    newrangemax = xrange.max;
+                }
+                else
+                {
+                    newrangemax = comparer-1;
+                    oldrangemin = comparer;
+                    oldrangemax = xrange.max;
+                }
+            }
+        }
+        else megaxmaspart.address = target;
+
+        if (newrangemin != null)
+            newrange = ((int)newrangemin,(int)newrangemax);
+        if (oldrangemin != null)
+            oldrange = ((int)oldrangemin,(int)oldrangemax);
+
+        switch (category)
+        {
+            case 'x':            
+                megaxmaspart.xrange = oldrange;
+                if (newrange.min > -1)
+                    return new MegaXmasPart(newrange, megaxmaspart.mrange, megaxmaspart.arange, megaxmaspart.srange, target);
                 else
                     return null;
                 break;
+            case 'm':            
+                megaxmaspart.mrange = oldrange;
+                if (newrange.min > -1)
+                    return new MegaXmasPart(megaxmaspart.xrange, newrange, megaxmaspart.arange, megaxmaspart.srange, target);
+                else
+                    return null;
+                break;
+            case 'a':            
+                megaxmaspart.arange = oldrange;
+                if (newrange.min > -1)
+                    return new MegaXmasPart(megaxmaspart.xrange, megaxmaspart.mrange, newrange, megaxmaspart.srange, target);
+                else
+                    return null;
+                break;
+            case 's':            
+                megaxmaspart.srange = oldrange;
+                if (newrange.min > -1)
+                    return new MegaXmasPart(megaxmaspart.xrange, megaxmaspart.mrange, megaxmaspart.arange, newrange, target);
+                else
+                    return null;
+                break;
+
         }
         return null;
     }
     
-
     public string? RunStep(XmasPart xmaspart)
     {
         int partvalue = 0;
@@ -454,7 +333,6 @@ partial class Program
         // B-kohdan logiikka
 
         int maxrange = 4000;
-        string firstflow = "in";
         var megaxmasparts = new List<MegaXmasPart>{new MegaXmasPart(maxrange)};
         var goodparts = new List<MegaXmasPart>();
 
