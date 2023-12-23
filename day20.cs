@@ -206,18 +206,7 @@ partial class Program
         }
         else
         {
-            /*
-            var circuitlist = new List<Device>();
-            foreach (var outputdevice in circuit["Broadcast"].outputs)
-            {
-                var inputdevices = new List<Device>();
-                var currentdevice = circuit[outputdevice];
-                foreach (var input in currentdevice.inputs)
-                {
-                    inputdevices.Add(circuit[input.Key]);
-                }
-            }*/
-            var uncleardevices = circuit.ToList();
+            var uncleardevices = circuit.Where(x => x.Value.delay == -1).ToList();
             while (true)
             {
                 Device device = uncleardevices[0].Value;
@@ -235,7 +224,9 @@ partial class Program
                     else
                     uncleardevices.Add(uncleardevices[0]);
                     uncleardevices.RemoveAt(0);
-                }       
+                }
+                else
+                uncleardevices.RemoveAt(0);
             }
         }
     }
