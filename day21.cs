@@ -99,13 +99,15 @@ partial class Program
                 }
             }
         }
-        startspace =(0,5);
-        Console.WriteLine(TimeToSides(maxy, maxx, startspace, gardenmap, directions));
-        return -1;
-        //else
+
+        var timetosidedict = TimeToSides(maxy, maxx, startspace, gardenmap, directions);
+        // Demokartta: ylös (0,8): 8; alas (10,3): 7; vasemmalle (4,0): 6; oikealle (4,10): 8
+        // Toisella kierroksella päädytään jo kulmiin
+        // Kulmat tulevat dominoimaan kehitystä
         {
             timetofill[startspace] = GetFillTime(maxy, maxx, startspace, gardenmap, spaces, directions);
         }
+
         // demokartalla menee 14 askelta koko kartan täyttämiseen
 
         // Katsotaan, kauanko menee täyttää kulmista
@@ -121,9 +123,73 @@ partial class Program
         // Demossa pääsee muihin kulmiin 10 vuorossa, mutta oikeaan alakulmaan (10,10) menee 14
         // Entä sivut?
 
-        result = places.Count;
+        // Nyt voidaan yhdistellä palikat.
+        // Jaetaan ongelma osiin:
+        // 1. keskusruutu (joka ehtii kyllä tällä askelmäärällä täyttyä),
+        // 2. keskusruudusta suoraan etenevät linjat, jotka täyttyvät mahdollisesti jonkun syklin mukaan. Näistä jää täyttymättä 1–2 kussakin suunnassa.
+        // 3. keskusruudusta vinoon sijaitsevat alueet. Nämä täyttyvät aritmeettisen sarjan mukaisesti: 1 + 2 + 3... aina jokaista maxx*maxy-aikaa kohden.
+        //      Koska askeleet voivat edetä reunoja pitkin, kulma-alueet täyttyvät tasaisesti ja kaikki vajaat alueet ovat samassa vaiheessa täyttymässä.
+        //      Siksi riittää tarkastaa vain 1–2 ruudukkoa per kvadrantti.
+        // Summataan nämä kustakin suunnasta, niin saadaan haluttu lopputulos.
+
+        // 1. Keskusruutu
+        result += spaces;
+
+        // 2. Suorat suunnat
+        {
+            // täydet
+            foreach (var direction in directions)
+            {
+                var relevantcorners = new List<(int,int)>();
+                if (direction == (1,0)) relevantcorners = new List<(int,int)>{(maxy-1,0),(maxy-1,maxx-1)};
+                if (direction == (-1,0)) relevantcorners = new List<(int,int)>{(0,0),(0,maxx-1)};
+                if (direction == (0,1)) relevantcorners = new List<(int,int)>{(0,maxx-1),(maxy-1,maxx-1)};
+                if (direction == (0,-1)) relevantcorners = new List<(int,int)>{(0,0),(maxy-1,0)};
+                var fastcorner = cornertimes.Where(x => relevantcorners.Contains(x.Key)).Min().Value;
+                result += (maxsteps-fastcorner)/maxy;
+
+                // vajaa(t)
+                var stepmaps = new List<bool[,]>();
+                for (int i = 0; i < relevantcorners.Count; i++)
+                {
+                    (int, int) relevantcorner = relevantcorners[i];
+                    var timeremaining = (maxsteps-cornertimes[relevantcorner])%maxy;
+                    stepmaps.Add(GetStepMap(maxy, maxx, startspace, gardenmap, directions));
+                }
+            }
+            
+        }
+        
+
         return result;
     }
+
+        private static bool[,] GetStepMap(int maxy, int maxx, (int y, int x) startspace, char[,] gardenmap, List<(int, int)> directions)
+    {
+        // TODO jatka tästä
+        int i = 0;
+        Dictionary<(int y, int x), bool> places = new Dictionary<(int y, int x), bool> {{startspace,false}};
+        while (true)
+        {
+            i++;
+            var newplaces = places.Where(x => !x.Value).ToDictionary();
+            foreach ((int y, int x) place in newplaces.Keys)
+            {
+                if (places[place]) continue;
+                places[place] = true;
+                foreach ((int y, int x) direction in directions)
+                {
+                    int newy = place.y + direction.y;
+                    int newx = place.x + direction.x;
+                    if (GoodPlace(newy, newx, maxy, maxx, gardenmap))
+                        places.TryAdd((newy, newx), false);
+                }
+            }
+            if (places.Count == spaces + 1)
+                return i;
+        }
+    }
+
 
     private static int GetFillTime(int maxy, int maxx, (int y, int x) startspace, char[,] gardenmap, int spaces, List<(int, int)> directions)
     {
@@ -214,7 +280,7 @@ partial class Program
                             resultdict[(newy,newx)] = i;
                             left = true;
                         }
-                        if (!right && newy == maxx-1)
+                        if (!right && newx == maxx-1)
                         {
                             resultdict[(newy,newx)] = i;
                             right = true;
