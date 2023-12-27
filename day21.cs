@@ -33,7 +33,7 @@ partial class Program
         //askelmäärä
         int maxsteps;
         if (phase == 2)
-            maxsteps = 100; //26501365 tositilanteessa;
+            maxsteps = 5000; //26501365 tositilanteessa;
         else if (datafile[^12..] == "demo21-1.txt")
             maxsteps = 6;
         else
@@ -170,10 +170,10 @@ partial class Program
             {
                 (int y, int x) relevantcorner = relevantcorners[i];
                 (int, int) entrycorner = (relevantcorner.y-direction.y*(maxy-1),relevantcorner.x-direction.x*(maxy-1));
-                var stepsToHere = cornertimes[relevantcorner] + ((maxsteps-cornertimes[relevantcorner])/maxy)*maxy + 1;
+                var stepsToHere = cornertimes[relevantcorner] + maxfields*maxy;
                 var timeremaining = maxsteps-stepsToHere;
-                var startStepParity = stepsToHere%2; 
-                stepmaps.UnionWith(GetStepMap(maxy, maxx, entrycorner, gardenmap, directions, timeremaining, startStepParity));
+                var startStepParity = (stepsToHere+1)%2; 
+                if (timeremaining > 0) stepmaps.UnionWith(GetStepMap(maxy, maxx, entrycorner, gardenmap, directions, timeremaining, startStepParity));
             }
             
             result += stepmaps.Count(x => x.parity == masterParity);
@@ -182,10 +182,10 @@ partial class Program
             {
                 (int y, int x) relevantcorner = relevantcorners[i];
                 (int, int) entrycorner = (relevantcorner.y-direction.y*(maxy-1),relevantcorner.x-direction.x*(maxy-1));
-                var stepsToHere = cornertimes[relevantcorner] + ((maxsteps-cornertimes[relevantcorner]))/maxy*maxy - maxy + 1;
+                var stepsToHere = cornertimes[relevantcorner] + (maxfields+1)*maxy;
                 var timeremaining = maxsteps-stepsToHere;
-                var startStepParity = stepsToHere%2; 
-                stepmaps.UnionWith(GetStepMap(maxy, maxx, entrycorner, gardenmap, directions, timeremaining, startStepParity));
+                var startStepParity = (stepsToHere+1)%2; 
+                if (timeremaining > 0) stepmaps.UnionWith(GetStepMap(maxy, maxx, entrycorner, gardenmap, directions, timeremaining, startStepParity));
             }
             result += stepmaps.Count(x => x.parity == masterParity);
         }  
@@ -194,27 +194,26 @@ partial class Program
         foreach (var corner in corners)
         {
             // Yhdistetään kaksi aritmeettista sarjaa.
+            // TODO jatka debuggausta tästä
             var fullmaps = (maxsteps-cornertimes[corner])/maxy-1;
-            result += (fullmaps/2+fullmaps%2)/2*(2*1+((fullmaps/2+fullmaps%2)-1)*2) * spaces[(startspaceParity+1)%2] + fullmaps/4*(2*2+(fullmaps/2-1)*2) * spaces[startspaceParity];
-
-            //
+            result += (fullmaps/2+fullmaps%2)/2*(2*1+((fullmaps/2+fullmaps%2)-1)*2) * spaces[(startspaceParity+1)%2] + (fullmaps/2)*(2*2+(fullmaps/2-1)*2)/2 * spaces[startspaceParity];
 
             // Vajaat:
             //  1. vajaa kerros
-            var stepsToHere = cornertimes[corner] + (maxsteps-cornertimes[corner])/maxy*maxy - maxy + 1;
+            var stepsToHere = cornertimes[corner] + fullmaps*maxy;
             var timeremaining = maxsteps-stepsToHere;
             var startcorner = (maxy-1-corner.y,maxx-1-corner.x);
-            var startStepParity = stepsToHere%2;    //tarkista 
+            var startStepParity = (stepsToHere+1)%2;    //tarkista 
             var stepmap = GetStepMap(maxy, maxx, startcorner, gardenmap, directions, timeremaining, startStepParity);
-            var adder = (fullmaps+1) * stepmap.Count(x => x.parity == masterParity);
+            BigInteger adder = (fullmaps+1) * stepmap.Count(x => x.parity == masterParity);
 
             result += adder;
 
             //  2. vajaa kerros
-            stepsToHere = cornertimes[corner] + (maxsteps-cornertimes[corner])/maxy*maxy + 1;
+            stepsToHere = cornertimes[corner] + (fullmaps+1)*maxy;
             timeremaining = maxsteps-stepsToHere;
             startcorner = (maxy-1-corner.y,maxx-1-corner.x);
-            startStepParity = stepsToHere%2;    //tarkista 
+            startStepParity = (stepsToHere+1)%2;    //tarkista 
             stepmap = GetStepMap(maxy, maxx, startcorner, gardenmap, directions, timeremaining, startStepParity);
 
             adder = (fullmaps+2) * stepmap.Count(x => x.parity == masterParity);
@@ -226,9 +225,9 @@ partial class Program
 
     private static HashSet<(int y,int x, int parity)> GetStepMap(int maxy, int maxx, (int y, int x) startspace, char[,] gardenmap, List<(int, int)> directions, int timeremaining, int startStepParity)
     {
-        var resultset = new HashSet<(int y, int x, int parity)>();
+        var resultset = new HashSet<(int y, int x, int parity)>{{(startspace.y,startspace.x,startStepParity)}};
         Dictionary<(int y, int x), bool> places = new Dictionary<(int y, int x), bool> {{startspace,false}};
-        for (var i=0;i<timeremaining;i++)
+        for (var i=1;i<timeremaining;i++)
         {
             var newplaces = places.Where(x => !x.Value).ToDictionary();
             foreach ((int y, int x) place in newplaces.Keys)
@@ -373,7 +372,7 @@ partial class Program
     }
 }
 
-// 100 askelmaa: oikea 6536, nyt 5762, ero 279
-// 500 askelmaa: oikea 167004, nyt 162979, ero 1075
-// 1000 askelmaa: oikea 668697, nyt 663219, ero 1729
-// 5000 askelmaa: oikea 16733044, nyt 16735751, ero 15893
+// 100 askelmaa: oikea 6536, nyt 6549
+// 500 askelmaa: oikea 167004, nyt 167712
+// 1000 askelmaa: oikea 668697, nyt 664419
+// 5000 askelmaa: oikea 16733044, nyt 16739388
