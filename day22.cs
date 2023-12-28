@@ -59,44 +59,33 @@ partial class Program
             var dropBlock = blocksByLower[i].block;
             int height = blocksByLower[i].block.z.min;
             var possibleHits = blocks.Where(block => block.z.max < height).ToList();
-            bool hit = false;
+            int dropDistance = dropDistance = dropBlock.z.min - 1;
             for (int j = possibleHits.Count-1; j >= 0; j--)
             {
                 ((int min, int max) x, (int min, int max) y, (int min, int max) z) hitBlock = possibleHits[j];
                 // Katsotaan törmätäänkö
                 if (CheckOverlap (dropBlock, hitBlock))
                     {
-                        int dropDistance = dropBlock.z.min - hitBlock.z.max - 1;
-                        dropBlock.z.max -= dropDistance;
-                        dropBlock.z.min -= dropDistance;
-                        hit = true;
-                        break;
+                        int thisdrop = dropBlock.z.min - hitBlock.z.max - 1;
+                        if (thisdrop < dropDistance) dropDistance = thisdrop;
                     }
             }
-            if (!hit)
-            {
-                int dropDistance = dropBlock.z.min - 1;
-                dropBlock.z.min -= dropDistance;
-                dropBlock.z.max -= dropDistance;
-            }
+            dropBlock.z.min -= dropDistance;
+            dropBlock.z.max -= dropDistance;
             blocks[i] = dropBlock;
         }
 
-        // Tarkista, mitä voi poistaa:
-        // Uudelleenjärjestä listat
-        blocks = blocks.OrderBy(x => x.z.max).ToList();
-        blocksByLower = OrderBlocks(blocks);
         // Käydään läpi alhaalta ylös
         for (int i = 0; i < blocks.Count; i++)
         {
             var block = blocks[i];
             // Katso, onko välittömästi tarkasteltavan palikan yläpuolella siinä kiinni palikkaa
             var possibleHits = blocks.Where(upperBlock => upperBlock.z.min == block.z.max + 1).ToList();    
-            possibleHits = possibleHits.Where(upperBlock => CheckOverlap(upperBlock, block)).ToList();  // (1,4),(0,0),(2,2) on, samoin (0,0) (0,0) (2,4), vaikuttaa toimivan ok
+            possibleHits = possibleHits.Where(upperBlock => CheckOverlap(upperBlock, block)).ToList();
 
             // Otetaan kiinni olevat palikat tarkasteluun
             bool removable = true;
-            foreach (var upperBlock in possibleHits)    // (1,4) (0,0) (2,2):ta ei voi poistaa, kuten pitäisikin
+            foreach (var upperBlock in possibleHits)
             {
                 bool unsupportable = false;
                 if (upperBlock.z.min != upperBlock.z.max) unsupportable = true;
@@ -104,7 +93,7 @@ partial class Program
                 List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> supportBlocks = new List<((int min, int max) x, (int min, int max) y, (int min, int max) z)>();
                 if (!unsupportable)
                 {
-                    supportBlocks = blocks.Select((value, index) => (Value: value, Index: index)).Where(support => support.Value.z.max == upperBlock.z.min - 1 && support.Index != i).Select(tuple => tuple.Value).ToList();                  
+                    supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block).ToList();
                     supportBlocks = supportBlocks.Where(sup => CheckOverlap(sup, upperBlock)).ToList();
                 }
                 if (supportBlocks.Count() == 0)
@@ -137,6 +126,3 @@ partial class Program
         return blocksByLower;
     }
 }
-
-// 449 too high
-// 445 too high
