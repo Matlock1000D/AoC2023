@@ -90,6 +90,9 @@ partial class Program
             case 21:
                 result = Day21(phase, datafile);
                 break;
+            case 22:
+                result = Day22(phase, datafile);
+                break;
 
         }
 
