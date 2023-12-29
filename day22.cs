@@ -76,36 +76,80 @@ partial class Program
         }
 
         // Käydään läpi alhaalta ylös
-        for (int i = 0; i < blocks.Count; i++)
+        if (phase == 1)
         {
-            var block = blocks[i];
-            // Katso, onko välittömästi tarkasteltavan palikan yläpuolella siinä kiinni palikkaa
-            var possibleHits = blocks.Where(upperBlock => upperBlock.z.min == block.z.max + 1).ToList();    
-            possibleHits = possibleHits.Where(upperBlock => CheckOverlap(upperBlock, block)).ToList();
-
-            // Otetaan kiinni olevat palikat tarkasteluun
-            bool removable = true;
-            foreach (var upperBlock in possibleHits)
+            for (int i = 0; i < blocks.Count; i++)
             {
-                bool unsupportable = false;
-                if (upperBlock.z.min != upperBlock.z.max) unsupportable = true;
-                // katsotaan, tukeeko joku muu palikka
-                List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> supportBlocks = new List<((int min, int max) x, (int min, int max) y, (int min, int max) z)>();
-                if (!unsupportable)
+                var block = blocks[i];
+                // Katso, onko välittömästi tarkasteltavan palikan yläpuolella siinä kiinni palikkaa
+                var possibleHits = blocks.Where(upperBlock => upperBlock.z.min == block.z.max + 1).ToList();    
+                possibleHits = possibleHits.Where(upperBlock => CheckOverlap(upperBlock, block)).ToList();
+
+                // Otetaan kiinni olevat palikat tarkasteluun
+                bool removable = true;
+                foreach (var upperBlock in possibleHits)
                 {
-                    supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block).ToList();
-                    supportBlocks = supportBlocks.Where(sup => CheckOverlap(sup, upperBlock)).ToList();
+                    bool unsupportable = false;
+                    if (upperBlock.z.min != upperBlock.z.max) unsupportable = true;
+                    // katsotaan, tukeeko joku muu palikka
+                    List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> supportBlocks = new List<((int min, int max) x, (int min, int max) y, (int min, int max) z)>();
+                    if (!unsupportable)
+                    {
+                        supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block).ToList();
+                        supportBlocks = supportBlocks.Where(sup => CheckOverlap(sup, upperBlock)).ToList();
+                    }
+                    if (supportBlocks.Count() == 0)
+                    {
+                        // Jos mikään ei tue, tätä palikkaa ei voi poistaa.
+                        removable = false;
+                        break;
+                    }
                 }
-                if (supportBlocks.Count() == 0)
-                {
-                    // Jos mikään ei tue, tätä palikkaa ei voi poistaa.
-                    removable = false;
-                    break;
-                }
+                if (removable) result++;
             }
-            if (removable) result++;
+        }
+        else
+        {
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                result += RemoveChecker(blocks, i);
+            }
+
         }
 
+        return result;
+    }
+
+    private static BigInteger RemoveChecker(List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> blocks, int i)
+    {
+        BigInteger result = 0;
+        var block = blocks[i];
+        // Katso, onko välittömästi tarkasteltavan palikan yläpuolella siinä kiinni palikkaa
+        var possibleHits = blocks.Where(upperBlock => upperBlock.z.min == block.z.max + 1).ToList();
+        possibleHits = possibleHits.Where(upperBlock => CheckOverlap(upperBlock, block)).ToList();
+
+        // Otetaan kiinni olevat palikat tarkasteluun
+        bool removable = true;
+        foreach (var upperBlock in possibleHits)
+        {
+            bool unsupportable = false;
+            if (upperBlock.z.min != upperBlock.z.max) unsupportable = true;
+            // katsotaan, tukeeko joku muu palikka
+            List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> supportBlocks = new List<((int min, int max) x, (int min, int max) y, (int min, int max) z)>();
+            if (!unsupportable)
+            {
+                supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block).ToList();
+                supportBlocks = supportBlocks.Where(sup => CheckOverlap(sup, upperBlock)).ToList();
+            }
+            if (supportBlocks.Count() == 0)
+            {
+                // Jos mikään ei tue, tätä palikkaa ei voi poistaa.
+                result += 1;
+                // tarkista, mitkä muut palikat tippuvat
+                result += RemoveChecker(blocks, blocks.IndexOf(upperBlock));
+            }
+        }
+        if (removable) result++;
         return result;
     }
 
