@@ -112,15 +112,14 @@ partial class Program
         {
             for (int i = 0; i < blocks.Count; i++)
             {
-                result += RemoveChecker(blocks, i);
+                result += RemoveChecker(blocks, i, []);
             }
-
         }
 
         return result;
     }
 
-    private static BigInteger RemoveChecker(List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> blocks, int i)
+    private static BigInteger RemoveChecker(List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> blocks, int i, List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> removedBlocks)
     {
         BigInteger result = 0;
         var block = blocks[i];
@@ -138,18 +137,18 @@ partial class Program
             List<((int min, int max) x, (int min, int max) y, (int min, int max) z)> supportBlocks = new List<((int min, int max) x, (int min, int max) y, (int min, int max) z)>();
             if (!unsupportable)
             {
-                supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block).ToList();
+                supportBlocks = blocks.Where(support => support.z.max == upperBlock.z.min - 1 && support != block && !removedBlocks.Contains(support)).ToList();
                 supportBlocks = supportBlocks.Where(sup => CheckOverlap(sup, upperBlock)).ToList();
             }
             if (supportBlocks.Count() == 0)
             {
                 // Jos mikään ei tue, tätä palikkaa ei voi poistaa.
                 result += 1;
+                removedBlocks.Add(upperBlock);
                 // tarkista, mitkä muut palikat tippuvat
-                result += RemoveChecker(blocks, blocks.IndexOf(upperBlock));
+                result += RemoveChecker(blocks, blocks.IndexOf(upperBlock), removedBlocks);
             }
         }
-        if (removable) result++;
         return result;
     }
 
