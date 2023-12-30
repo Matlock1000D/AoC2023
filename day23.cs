@@ -11,6 +11,7 @@ partial class Program
         // Oletukset (silmäilty datasta):
         // Kaikki mäet ovat risteyksissä
         // Heti mäen jälkeen ei ole uutta mäkeä tai risteystä
+        // Mäkiin ei koskaan tulla sivusta.
         string[] lines = [];
 
         if (File.Exists(datafile))
@@ -103,27 +104,55 @@ partial class Program
             }
         }
         
-        while (unknowntrails.Count > 0)
+        if (phase == 1)
         {
-            var unknowntrail = unknowntrails.First();
-            foreach (var stepDirection in directions)
+            while (unknowntrails.Count > 0)
             {
-                var nextstep = TupleSum(unknowntrail.Key, stepDirection.Value);
-                if (hikingMap[nextstep.y, nextstep.x] == stepDirection.Key)
+                var unknowntrail = unknowntrails.First();
+                foreach (var stepDirection in directions)
                 {
-                    var addedpath = FindNextNode(unknowntrail.Key,stepDirection.Value,directions,hikingMap,endline);
-                    unknowntrail.Value.Add(addedpath.Key, addedpath.Value);
-                    if (!unknowntrails.Keys.Contains(addedpath.Key) && !trails.Keys.Contains(addedpath.Key))
+                    var nextstep = TupleSum(unknowntrail.Key, stepDirection.Value);
+                    if (hikingMap[nextstep.y, nextstep.x] == stepDirection.Key)
                     {
-                        // Ei yritetä etsiä enää maalista lisää reittejä
-                        if (addedpath.Key.y != endline)
-                            unknowntrails.Add(addedpath.Key, new Dictionary<(int y, int x), int>());
+                        var addedpath = FindNextNode(unknowntrail.Key,stepDirection.Value,directions,hikingMap,endline);
+                        unknowntrail.Value.Add(addedpath.Key, addedpath.Value);
+                        if (!unknowntrails.Keys.Contains(addedpath.Key) && !trails.Keys.Contains(addedpath.Key))
+                        {
+                            // Ei yritetä etsiä enää maalista lisää reittejä
+                            if (addedpath.Key.y != endline)
+                                unknowntrails.Add(addedpath.Key, new Dictionary<(int y, int x), int>());
+                        }
                     }
                 }
+                trails.Add(unknowntrail.Key, unknowntrail.Value);
+                unknowntrails.Remove(unknowntrail.Key);
             }
-            trails.Add(unknowntrail.Key, unknowntrail.Value);
-            unknowntrails.Remove(unknowntrail.Key);
         }
+        else
+        {
+            while (unknowntrails.Count > 0)
+            {
+                var unknowntrail = unknowntrails.First();
+                foreach (var stepDirection in directions)
+                {
+                    var nextstep = TupleSum(unknowntrail.Key, stepDirection.Value);
+                    if (hikingMap[nextstep.y, nextstep.x] != '#')
+                    {
+                        var addedpath = FindNextNode2(unknowntrail.Key,stepDirection.Value,directions,hikingMap,endline);
+                        unknowntrail.Value.Add(addedpath.Key, addedpath.Value);
+                        if (!unknowntrails.Keys.Contains(addedpath.Key) && !trails.Keys.Contains(addedpath.Key))
+                        {
+                            // Ei yritetä etsiä enää maalista tai lähdöstä lisää reittejä
+                            if (addedpath.Key.y != endline && addedpath.Key.y != 0)
+                                unknowntrails.Add(addedpath.Key, new Dictionary<(int y, int x), int>());
+                        }
+                    }
+                }
+                trails.Add(unknowntrail.Key, unknowntrail.Value);
+                unknowntrails.Remove(unknowntrail.Key);
+            }
+        }
+
 
         result += TheLongestTrail(startSpot, trails, visitedNodes.ToList(), endline);
 
@@ -154,7 +183,7 @@ partial class Program
                         return new KeyValuePair<(int y, int x), int>((nextstep.y, nextstep.x),length);
                     break;
                 }
-                if (directions.Keys.Contains(hikingMap [nextstep.y, nextstep.x]))
+                if (directions.Keys.Contains(hikingMap [nextstep.y, nextstep.x]) && directions[hikingMap [nextstep.y, nextstep.x]] == newdirection)
                 {
                     length+=2;
                     direction = newdirection;
@@ -164,6 +193,41 @@ partial class Program
             }
         }
     }
+
+    private static KeyValuePair<(int y, int x), int> FindNextNode2((int y,int x) startnode, (int y, int x) direction, Dictionary<char, (int, int)> directions, char[,] hikingMap, int endline)
+    {
+        // Versio, jossa mäet eivät ole yksisuuntaisia
+        int length = 2;
+        (int y, int x) laststep = TupleSum(direction,TupleSum(startnode,direction));
+        while(true)
+        {  
+            var baddirection = TupleProduct((-1,-1),direction);
+            foreach (var newdirection in directions.Values)
+            {
+                if (newdirection == baddirection)
+                    continue;
+                (int y, int x) nextstep = TupleSum(laststep,newdirection);
+                if (hikingMap [nextstep.y, nextstep.x] == '.')
+                {
+                    length++;
+                    direction = newdirection;
+                    laststep = nextstep;
+                    if (nextstep.y == endline || nextstep.y == 0)
+                    // Jos on tultu alkuun tai maaliin, lopetetaan
+                        return new KeyValuePair<(int y, int x), int>((nextstep.y, nextstep.x),length);
+                    break;
+                }
+                if (directions.Keys.Contains(hikingMap [nextstep.y, nextstep.x]))
+                {
+                    length+=2;
+                    direction = newdirection;
+                    laststep = TupleSum(TupleSum(laststep,direction),direction);
+                    return new KeyValuePair<(int y, int x), int>((laststep.y, laststep.x),length);
+                }
+            }
+        }
+    }
+
 
     private static (int y, int x) TupleSum((int y, int x) tuple1, (int y, int x) tuple2)
     {
@@ -185,6 +249,8 @@ partial class Program
         {
             if (targetNode.Key.y == endLine)
                 return targetNode.Value;
+            if (targetNode.Key.y == 0)
+                continue;
             BigInteger? thisRouteLength = targetNode.Value + TheLongestTrail(targetNode.Key, trails, visitedNodes.ToList(), endLine);
             if (result == null || thisRouteLength > result)
                 result = thisRouteLength;
