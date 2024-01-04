@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 
 partial class Program
 {
+    static (BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)[] constanthails = Array.Empty<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
     static BigInteger Day24(int phase, string datafile)
     {
         string[] lines = [];
@@ -34,6 +35,7 @@ partial class Program
 
         var hails = new List<((BigInteger x, BigInteger y, BigInteger z) pos, (BigInteger x, BigInteger y, BigInteger z) vel)>();
 
+
         foreach (string line in lines)
         {
             var splitstring = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -45,6 +47,25 @@ partial class Program
             var vel_z = BigInteger.Parse(splitstring[6].Trim(','));
             hails.Add(((pos_x, pos_y, pos_z),(vel_x, vel_y, vel_z)));
         }
+
+        var hailarraylist = new List<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
+        for (var i = 0; i < 3; i++)
+        {
+            var hail = hails[i];
+            var arrayline = (hail.pos.x, hail.vel.x, hail.pos.y, hail.vel.y, hail.pos.z, hail.vel.z);
+            hailarraylist.Add(arrayline);
+        }
+        constanthails = hailarraylist.ToArray();
+
+        if (phase == 2)
+        {
+            // alkuperäinen arvaus
+            BigInteger[] F = [100000000000000, 10000, 100000000000000, 10000, 100000000000000,10000,100000,100000,100000]; //x, x', y, y', z, z', t1, t2, t3
+            // Funktiovektori
+            Func<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>[] funcs = 
+            {F1, F2, F3, F4, F5, F6, F7, F8, F9};
+        }
+        return -1;
 
         double areamin, areamax;
         if (datafile[^12..] == "demo24-1.txt")
@@ -58,6 +79,7 @@ partial class Program
             areamax = 400000000000000;
         }
 
+        // Toivotaan, että ensimmäiset kolme raetta ovat lineaarisesti riippumattomia:
         // Silmukoidaan raeparit
         for (var i=0; i<hails.Count - 1; i++)
         {
@@ -141,5 +163,10 @@ partial class Program
         }
 
         return result;
+    }
+
+    private static BigInteger F1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return x - constanthails[0].x + vx*t1 -constanthails[0].vx * t1;
     }
 }
