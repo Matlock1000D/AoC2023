@@ -106,6 +106,7 @@ partial class Program
                         d_f_x[i,j] = d_funcs[i,j](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
                     }
                 }
+                // Nyt tarvitaan d_f_x:n käänteismatriisi, jolloin haluttu Δx = -1 * (d_funcs)^-1 * funcs (x0)
                 // Tarvitaan käänteismatriisi
                 // ja determinantin laskija
             }
@@ -317,10 +318,6 @@ partial class Program
         return vz-constanthails[2].vz;
     }
 
-
-
-
-
     private static BigInteger DetCalculator(BigInteger[,] johnMatrix)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
@@ -383,5 +380,25 @@ partial class Program
         }
 
         return comatrix;
+    }
+
+    private static BigInteger[,] Inverter(BigInteger[,] johnMatrix)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+        int rank = johnMatrix.GetLength(0);
+
+        BigInteger[,] invMatrix = new BigInteger[rank,rank];
+
+        var det = DetCalculator(johnMatrix);
+        var adjungate = Comatrixer(johnMatrix);
+
+        for (var i = 0; i < rank; i++)
+        {
+            for (var j=0; j < rank; j++)
+            {
+                invMatrix[i,j] = adjungate[i,j]/det;
+            }
+        }
+        return invMatrix;
     }
 }
