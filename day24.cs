@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 partial class Program
 {
-    static (BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)[] constanthails = Array.Empty<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
+    static (double x, double vx, double y, double vy, double z, double vz)[] constanthails = Array.Empty<(double x, double vx, double y, double vy, double z, double vz)>();
     static BigInteger Day24(int phase, string datafile)
     {
         string[] lines = [];
@@ -48,11 +48,11 @@ partial class Program
             hails.Add(((pos_x, pos_y, pos_z),(vel_x, vel_y, vel_z)));
         }
 
-        var hailarraylist = new List<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
+        var hailarraylist = new List<(double x, double vx, double y, double vy, double z, double vz)>();
         for (var i = 0; i < 3; i++)
         {
             var hail = hails[i];
-            var arrayline = (hail.pos.x, hail.vel.x, hail.pos.y, hail.vel.y, hail.pos.z, hail.vel.z);
+            var arrayline = ((double)hail.pos.x, (double)hail.vel.x, (double)hail.pos.y, (double)hail.vel.y, (double)hail.pos.z, (double)hail.vel.z);
             hailarraylist.Add(arrayline);
         }
         constanthails = hailarraylist.ToArray();
@@ -60,13 +60,13 @@ partial class Program
         if (phase == 2)
         {
             // alkuperäinen arvaus
-            BigInteger[] F = [100000000000000, 10000, 100000000000000, 10000, 100000000000000,10000,100000,100000,100000]; //x, x', y, y', z, z', t1, t2, t3
+            double[] F = [100000000000000, 10000, 100000000000000, 10000, 100000000000000,10000,100000,100000,100000]; //x, x', y, y', z, z', t1, t2, t3
             // Funktiovektori
-            Func<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>[] funcs = 
+            Func<double, double, double, double, double, double, double, double, double, double>[] funcs = 
             {F1, F2, F3, F4, F5, F6, F7, F8, F9};
 
             // Osittaisderivaattavektori:
-            Func<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>[,] d_funcs = {
+            Func<double, double, double, double, double, double, double, double, double, double>[,] d_funcs = {
                 {D1, T1, D0, D0, D0, D0, X01, D0, D0},
                 {D0, D0, D1, T1, D0, D0, Y01, D0, D0},
                 {D0, D0, D0, D0, D1, T1, Z01, D0, D0},
@@ -92,13 +92,13 @@ partial class Program
                     }
                 }
                 if (foundzero)
-                    return F[0] + F[2] + F[4];
+                    return (BigInteger)(F[0] + F[2] + F[4]);
 
                 // Käytetään Newtonin menetelmää:
                 // On ratkaistava yhtälö d_funcs Δx = -funcs(x0)
                 // Lasketaan d_funcs(F)
                 const int rank = 9;
-                var d_f_x = new BigInteger[rank,rank];
+                var d_f_x = new double[rank,rank];
                 for (var i = 0; i < rank; i++)
                 {
                     for (var j = 0; j < rank; j++)
@@ -106,9 +106,22 @@ partial class Program
                         d_f_x[i,j] = d_funcs[i,j](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
                     }
                 }
+
+                var funcsAtF = new double[1,rank];
+                for (var i=0; i<rank ; i++)
+                    funcsAtF[0,i] = funcs[i](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
+                //sijoitus funciin!
+
                 // Nyt tarvitaan d_f_x:n käänteismatriisi, jolloin haluttu Δx = -1 * (d_funcs)^-1 * funcs (x0)
-                // Tarvitaan käänteismatriisi
-                // ja determinantin laskija
+                var delta_x = MatrixConstMultiplier(-1,MatrixMultiplier(Inverter(d_f_x),funcsAtF));
+
+                // Päivitetään F:ää
+                var new_F = new double[rank];
+
+                for (var i=0; i<rank; i++)
+                    new_F[i] = F[i] + delta_x[0,i];
+                
+                F = new_F;
             }
         }
         return -1;
@@ -211,114 +224,114 @@ partial class Program
         return result;
     }
 
-    private static BigInteger F1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F1(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return x - constanthails[0].x + vx*t1 -constanthails[0].vx * t1;
     }
     
-    private static BigInteger F2(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F2(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return y - constanthails[0].y + vy*t1 -constanthails[0].vy * t1;
     }
 
-    private static BigInteger F3(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F3(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return z - constanthails[0].z + vz*t1 -constanthails[0].vz * t1;
     }
 
-    private static BigInteger F4(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F4(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return x - constanthails[1].x + vx*t2 -constanthails[1].vx * t2;
     }
     
-    private static BigInteger F5(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F5(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return y - constanthails[1].y + vy*t2 -constanthails[1].vy * t2;
     }
 
-    private static BigInteger F6(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F6(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return z - constanthails[1].z + vz*t2 -constanthails[1].vz * t2;
     }
 
-    private static BigInteger F7(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F7(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return x - constanthails[2].x + vx*t3 -constanthails[2].vx * t3;
     }
     
-    private static BigInteger F8(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F8(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return y - constanthails[2].y + vy*t3 -constanthails[2].vy * t3;
     }
 
-    private static BigInteger F9(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double F9(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return z - constanthails[2].z + vz*t3 -constanthails[2].vz * t3;
     }
 
-    private static BigInteger D0(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double D0(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return 0;
     }
 
-    private static BigInteger D1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double D1(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return 1;
     }
 
-    private static BigInteger T1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double T1(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return t1;
     }
 
-    private static BigInteger T2(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double T2(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return t2;
     }
 
-    private static BigInteger T3(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double T3(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return t3;
     }
 
-    private static BigInteger X01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double X01(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vx-constanthails[0].vx;
     }
-    private static BigInteger X02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double X02(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vx-constanthails[1].vx;
     }
-    private static BigInteger X03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double X03(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vx-constanthails[2].vx;
     }
-    private static BigInteger Y01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Y01(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vy-constanthails[0].vy;
     }
-    private static BigInteger Y02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Y02(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vy-constanthails[1].vy;
     }
-    private static BigInteger Y03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Y03(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vy-constanthails[2].vy;
     }
-    private static BigInteger Z01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Z01(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vz-constanthails[0].vz;
     }
-    private static BigInteger Z02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Z02(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vz-constanthails[1].vz;
     }
-    private static BigInteger Z03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    private static double Z03(double x, double vx, double y, double vy, double z, double vz, double t1, double t2, double t3)
     {
         return vz-constanthails[2].vz;
     }
 
-    private static BigInteger DetCalculator(BigInteger[,] johnMatrix)
+    private static double DetCalculator(double[,] johnMatrix)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
 
@@ -326,23 +339,23 @@ partial class Program
         if (rank == 1)
             return johnMatrix[0,0];
         
-        BigInteger determinant = 0;
+        double determinant = 0;
         for (var i = 0; i < rank; i++)
         {
             var c = johnMatrix[0, i];
             if (c == 0)
                 continue;
-            BigInteger[,] minor = GetMinor(johnMatrix, 0, i);
-            determinant += (BigInteger)Math.Pow(-1, i) * c * DetCalculator(minor);
+            double[,] minor = GetMinor(johnMatrix, 0, i);
+            determinant += Math.Pow(-1, i) * c * DetCalculator(minor);
         }
         return determinant;
     }
 
-    private static BigInteger[,] GetMinor(BigInteger[,] johnMatrix, int i, int j)
+    private static double[,] GetMinor(double[,] johnMatrix, int i, int j)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
         int rank = johnMatrix.GetLength(0);
-        BigInteger[,] minor = new BigInteger[rank - 1, rank - 1];
+        var minor = new double[rank - 1, rank - 1];
         for (var k = 1; k < rank; k++)
         {
             for (var l = 1; l < rank; l++)
@@ -363,18 +376,18 @@ partial class Program
         return minor;
     }
 
-    private static BigInteger[,] Comatrixer(BigInteger[,] johnMatrix)
+    private static double[,] Comatrixer(double[,] johnMatrix)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
         int rank = johnMatrix.GetLength(0);
 
-        BigInteger[,] comatrix = new BigInteger[rank,rank];
+        var comatrix = new double[rank,rank];
 
         for (var i = 0; i < rank ; i++)
         {
             for (var j = 0; j < rank; j++)
             {
-                var cofactor = (BigInteger)Math.Pow(-1,i+j) * DetCalculator(GetMinor(johnMatrix, i, j));
+                var cofactor = Math.Pow(-1,i+j) * DetCalculator(GetMinor(johnMatrix, i, j));
                 comatrix[i,j] = cofactor;
             }
         }
@@ -382,12 +395,12 @@ partial class Program
         return comatrix;
     }
 
-    private static BigInteger[,] Inverter(BigInteger[,] johnMatrix)
+    private static double[,] Inverter(double[,] johnMatrix)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
         int rank = johnMatrix.GetLength(0);
 
-        BigInteger[,] invMatrix = new BigInteger[rank,rank];
+        var invMatrix = new double[rank,rank];
 
         var det = DetCalculator(johnMatrix);
         var adjungate = Comatrixer(johnMatrix);
@@ -400,5 +413,44 @@ partial class Program
             }
         }
         return invMatrix;
+    }
+
+    private static double[,] MatrixConstMultiplier (double multiplier, double[,] johnMatrix)
+    {
+        int maxi = johnMatrix.GetLength(0);
+        int maxj = johnMatrix.GetLength(1);
+
+        var newMatrix = new double[maxi,maxj];
+
+        for (var i=0;i<maxi;i++)
+            for (var j=0;j<maxj;j++)
+                newMatrix[i,j] = multiplier * johnMatrix[i,j];
+        
+        return newMatrix;
+    }
+
+    private static double[,] MatrixMultiplier (double[,] leftMatrix, double[,] rightMatrix)
+    {
+        int leftCols = leftMatrix.GetLength(0);
+        int rightRows = rightMatrix.GetLength(1);
+        if (leftCols != rightRows)
+            throw new Exception("Ei voi kertoa!");
+        
+        int cols = rightMatrix.GetLength(0);
+        int rows = leftMatrix.GetLength(1);
+        
+        var multiMatrix = new double[cols,rows];
+
+        for (var i = 0; i < rows; i++)
+        {
+            for (var j = 0; j < cols; j++)
+            {
+                double c = 0;
+                for (var k = 0; k < leftCols; k++)
+                    c += leftMatrix[k,i] * rightMatrix[j,k];
+                multiMatrix[j,i] = c;
+            }
+        }
+        return multiMatrix;
     }
 }
