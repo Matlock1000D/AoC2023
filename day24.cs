@@ -64,6 +64,51 @@ partial class Program
             // Funktiovektori
             Func<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>[] funcs = 
             {F1, F2, F3, F4, F5, F6, F7, F8, F9};
+
+            // Osittaisderivaattavektori:
+            Func<BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, BigInteger>[,] d_funcs = {
+                {D1, T1, D0, D0, D0, D0, X01, D0, D0},
+                {D0, D0, D1, T1, D0, D0, Y01, D0, D0},
+                {D0, D0, D0, D0, D1, T1, Z01, D0, D0},
+                {D1, T2, D0, D0, D0, D0, D0, X02, D0},
+                {D0, D0, D1, T2, D0, D0, D0, Y02, D0},
+                {D0, D0, D0, D0, D1, T2, D0, Z02, D0},
+                {D1, T3, D0, D0, D0, D0, D0, D0, X03},
+                {D0, D0, D1, T3, D0, D0, D0, D0, Y03},
+                {D0, D0, D0, D0, D1, T3, D0, D0, Z03}
+                };
+
+            while (true)
+            {
+                //Lasketaan sattuisiko funcs olemaan nollavektori
+                bool foundzero = true;
+                foreach (var func in funcs)
+                {
+                    var funcVal = func(F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
+                    if (funcVal != 0)
+                    {
+                        foundzero = false;
+                        break;
+                    }
+                }
+                if (foundzero)
+                    return F[0] + F[2] + F[4];
+
+                // Käytetään Newtonin menetelmää:
+                // On ratkaistava yhtälö d_funcs Δx = -funcs(x0)
+                // Lasketaan d_funcs(F)
+                const int rank = 9;
+                var d_f_x = new BigInteger[rank,rank];
+                for (var i = 0; i < rank; i++)
+                {
+                    for (var j = 0; j < rank; j++)
+                    {
+                        d_f_x[i,j] = d_funcs[i,j](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
+                    }
+                }
+                // Tarvitaan käänteismatriisi
+                // ja determinantin laskija
+            }
         }
         return -1;
 
@@ -168,5 +213,175 @@ partial class Program
     private static BigInteger F1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
     {
         return x - constanthails[0].x + vx*t1 -constanthails[0].vx * t1;
+    }
+    
+    private static BigInteger F2(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return y - constanthails[0].y + vy*t1 -constanthails[0].vy * t1;
+    }
+
+    private static BigInteger F3(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return z - constanthails[0].z + vz*t1 -constanthails[0].vz * t1;
+    }
+
+    private static BigInteger F4(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return x - constanthails[1].x + vx*t2 -constanthails[1].vx * t2;
+    }
+    
+    private static BigInteger F5(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return y - constanthails[1].y + vy*t2 -constanthails[1].vy * t2;
+    }
+
+    private static BigInteger F6(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return z - constanthails[1].z + vz*t2 -constanthails[1].vz * t2;
+    }
+
+    private static BigInteger F7(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return x - constanthails[2].x + vx*t3 -constanthails[2].vx * t3;
+    }
+    
+    private static BigInteger F8(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return y - constanthails[2].y + vy*t3 -constanthails[2].vy * t3;
+    }
+
+    private static BigInteger F9(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return z - constanthails[2].z + vz*t3 -constanthails[2].vz * t3;
+    }
+
+    private static BigInteger D0(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return 0;
+    }
+
+    private static BigInteger D1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return 1;
+    }
+
+    private static BigInteger T1(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return t1;
+    }
+
+    private static BigInteger T2(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return t2;
+    }
+
+    private static BigInteger T3(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return t3;
+    }
+
+    private static BigInteger X01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vx-constanthails[0].vx;
+    }
+    private static BigInteger X02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vx-constanthails[1].vx;
+    }
+    private static BigInteger X03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vx-constanthails[2].vx;
+    }
+    private static BigInteger Y01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vy-constanthails[0].vy;
+    }
+    private static BigInteger Y02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vy-constanthails[1].vy;
+    }
+    private static BigInteger Y03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vy-constanthails[2].vy;
+    }
+    private static BigInteger Z01(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vz-constanthails[0].vz;
+    }
+    private static BigInteger Z02(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vz-constanthails[1].vz;
+    }
+    private static BigInteger Z03(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz, BigInteger t1, BigInteger t2, BigInteger t3)
+    {
+        return vz-constanthails[2].vz;
+    }
+
+
+
+
+
+    private static BigInteger DetCalculator(BigInteger[,] johnMatrix)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+
+        int rank = johnMatrix.GetLength(0);
+        if (rank == 1)
+            return johnMatrix[0,0];
+        
+        BigInteger determinant = 0;
+        for (var i = 0; i < rank; i++)
+        {
+            var c = johnMatrix[0, i];
+            if (c == 0)
+                continue;
+            BigInteger[,] minor = GetMinor(johnMatrix, 0, i);
+            determinant += (BigInteger)Math.Pow(-1, i) * c * DetCalculator(minor);
+        }
+        return determinant;
+    }
+
+    private static BigInteger[,] GetMinor(BigInteger[,] johnMatrix, int i, int j)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+        int rank = johnMatrix.GetLength(0);
+        BigInteger[,] minor = new BigInteger[rank - 1, rank - 1];
+        for (var k = 1; k < rank; k++)
+        {
+            for (var l = 1; l < rank; l++)
+            {
+                int mi, mj;
+                if (k < i)
+                    mi = k;
+                else
+                    mi = k-1;
+                if (l < j)
+                    mj = l;
+                else
+                    mj = l-1;
+
+                minor[mi,mj] = johnMatrix[j, k];
+            }
+        }
+        return minor;
+    }
+
+    private static BigInteger[,] Comatrixer(BigInteger[,] johnMatrix)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+        int rank = johnMatrix.GetLength(0);
+
+        BigInteger[,] comatrix = new BigInteger[rank,rank];
+
+        for (var i = 0; i < rank ; i++)
+        {
+            for (var j = 0; j < rank; j++)
+            {
+                var cofactor = (BigInteger)Math.Pow(-1,i+j) * DetCalculator(GetMinor(johnMatrix, i, j));
+                comatrix[i,j] = cofactor;
+            }
+        }
+
+        return comatrix;
     }
 }
