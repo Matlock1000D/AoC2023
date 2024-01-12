@@ -49,7 +49,7 @@ partial class Program
         }
 
         var hailarraylist = new List<(double x, double vx, double y, double vy, double z, double vz)>();
-        for (var i = 0; i < 3; i++)
+        foreach (var i in new int[]{0,1,2,4})
         {
             var hail = hails[i];
             var arrayline = ((double)hail.pos.x, (double)hail.vel.x, (double)hail.pos.y, (double)hail.vel.y, (double)hail.pos.z, (double)hail.vel.z);
@@ -57,8 +57,59 @@ partial class Program
         }
         constanthails = hailarraylist.ToArray();
 
+        var hailarraylist_int = new List<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
+        for (var i = 0; i < hails.Count; i++)
+        {
+            var hail = hails[i];
+            var arrayline = (hail.pos.x, hail.vel.x, hail.pos.y, hail.vel.y, hail.pos.z, hail.vel.z);
+            hailarraylist_int.Add(arrayline);
+        }
+        var constanthails_int = hailarraylist_int.ToArray();
+
+
         if (phase == 2)
         {
+            BigInteger[][] Vs = new BigInteger[3][];
+            BigInteger[][] Ps = new BigInteger[3][]; 
+            for (var i = 0; i<3; i++)
+            {
+                Vs[i] = [hails[i].vel.x,hails[i].vel.y,hails[i].vel.z];
+                Ps[i] = [hails[i].pos.x,hails[i].pos.y,hails[i].pos.z];
+            }
+
+            double[,] Xmat = new double[3,3];
+            BigInteger[,] Dmat = new BigInteger[1,3];
+
+            for (var i=0; i<3; i++)
+            {
+                int j = (i+1)%3;
+                var vdiff = VectorDiff(Vs[i],Vs[j]);
+                var pdiff = VectorDiff(Ps[i],Ps[j]);
+                var crossVect = CrossProduct(vdiff,pdiff);
+                var pVect = CrossProduct(Ps[i],Ps[j]);
+
+                Xmat[0,i] = (double)crossVect[0];
+                Xmat[1,i] = (double)crossVect[1];
+                Xmat[2,i] = (double)crossVect[2];
+                Dmat[0,i] = DotProduct(vdiff, pVect);
+            }
+
+            double[,] invVect = Inverter(Xmat);
+            BigInteger[,] intVect = new BigInteger[3,3];
+            for (var i = 0; i<3 ;i++)
+                for (var j=0; j<3; j++)
+                    intVect[i,j] = (BigInteger)invVect[i,j];
+
+            var solution = MatrixMultiplierInt(intVect,Dmat);
+
+            return solution[0,0] + solution[0,1] + solution[0,2];
+
+            // Alempana toivottomia ratkaisuyritelmiä
+
+
+            // Eipäs menekään Newtonin menetelmällä
+            // Kaikissa i,j = sarake, rivi, koska olen tyhmä.
+
             // alkuperäinen arvaus
             double[] F = [100000000000000, 10000, 100000000000000, 10000, 100000000000000,10000,100000,100000,100000]; //x, x', y, y', z, z', t1, t2, t3
             // Funktiovektori
@@ -78,53 +129,82 @@ partial class Program
                 {D0, D0, D0, D0, D1, T3, D0, D0, Z03}
                 };
 
-            while (true)
+            // Kerroinmatriisi (analyyttisestä ratkaisusta, kuulemma oikein mutta ei oikein mene laskemalla...
+
+            double[,] coefficients = new double[,]{
+                {constanthails[1].vy-constanthails[0].vy,constanthails[2].vy-constanthails[1].vy,constanthails[3].vy-constanthails[2].vy,constanthails[0].vy-constanthails[3].vy},
+                {constanthails[0].y-constanthails[1].y,constanthails[1].y-constanthails[2].y,constanthails[2].y-constanthails[3].y,constanthails[3].y-constanthails[0].y},
+                {constanthails[0].vx-constanthails[1].vx,constanthails[1].vx-constanthails[2].vx,constanthails[2].vx-constanthails[3].vx,constanthails[3].vx-constanthails[0].vx},
+                {constanthails[1].x-constanthails[0].x,constanthails[2].x-constanthails[1].x,constanthails[3].x-constanthails[2].x,constanthails[0].x-constanthails[3].x}
+            };
+
+            double[,] constants = new double[,]{{
+                -constanthails[0].x*constanthails[0].vy+constanthails[0].vx*constanthails[0].y+constanthails[1].x*constanthails[1].vy-constanthails[1].vx*constanthails[1].y,
+                -constanthails[1].x*constanthails[1].vy+constanthails[1].vx*constanthails[1].y+constanthails[2].x*constanthails[2].vy-constanthails[2].vx*constanthails[2].y,
+                -constanthails[2].x*constanthails[2].vy+constanthails[2].vx*constanthails[2].y+constanthails[3].x*constanthails[3].vy-constanthails[3].vx*constanthails[3].y,
+                -constanthails[3].x*constanthails[3].vy+constanthails[3].vx*constanthails[3].y+constanthails[0].x*constanthails[0].vy-constanthails[0].vx*constanthails[0].y                
+            }};
+
+            BigInteger[,] coefficients_int = new BigInteger[,]{
+                {constanthails_int[1].vy-constanthails_int[0].vy,constanthails_int[2].vy-constanthails_int[1].vy,constanthails_int[3].vy-constanthails_int[2].vy,constanthails_int[0].vy-constanthails_int[3].vy},
+                {constanthails_int[0].y-constanthails_int[1].y,constanthails_int[1].y-constanthails_int[2].y,constanthails_int[2].y-constanthails_int[3].y,constanthails_int[3].y-constanthails_int[0].y},
+                {constanthails_int[0].vx-constanthails_int[1].vx,constanthails_int[1].vx-constanthails_int[2].vx,constanthails_int[2].vx-constanthails_int[3].vx,constanthails_int[3].vx-constanthails_int[0].vx},
+                {constanthails_int[1].x-constanthails_int[0].x,constanthails_int[2].x-constanthails_int[1].x,constanthails_int[3].x-constanthails_int[2].x,constanthails_int[0].x-constanthails_int[3].x}
+            };
+
+            BigInteger[,] constants_int = new BigInteger[,]{{
+                -constanthails_int[0].x*constanthails_int[0].vy+constanthails_int[0].vx*constanthails_int[0].y+constanthails_int[1].x*constanthails_int[1].vy-constanthails_int[1].vx*constanthails_int[1].y,
+                -constanthails_int[1].x*constanthails_int[1].vy+constanthails_int[1].vx*constanthails_int[1].y+constanthails_int[2].x*constanthails_int[2].vy-constanthails_int[2].vx*constanthails_int[2].y,
+                -constanthails_int[2].x*constanthails_int[2].vy+constanthails_int[2].vx*constanthails_int[2].y+constanthails_int[3].x*constanthails_int[3].vy-constanthails_int[3].vx*constanthails_int[3].y,
+                -constanthails_int[3].x*constanthails_int[3].vy+constanthails_int[3].vx*constanthails_int[3].y+constanthails_int[0].x*constanthails_int[0].vy-constanthails_int[0].vx*constanthails_int[0].y                
+            }};
+            for (var i = 0; i < hails.Count; i++)
             {
-                //Lasketaan sattuisiko funcs olemaan nollavektori
-                bool foundzero = true;
-                foreach (var func in funcs)
+                for (var j = i+1; j < hails.Count; j++)
                 {
-                    var funcVal = func(F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
-                    if (funcVal != 0)
+                    for (var k = j+1; k < hails.Count; k++)
                     {
-                        foundzero = false;
-                        break;
+                        for (var l = k+1; l < hails.Count; l++)
+                        {
+                            BigInteger[,] coefficients_temp = new BigInteger[,]{
+                {constanthails_int[j].vy-constanthails_int[i].vy,constanthails_int[k].vy-constanthails_int[j].vy,constanthails_int[l].vy-constanthails_int[k].vy,constanthails_int[i].vy-constanthails_int[l].vy},
+                {constanthails_int[i].y-constanthails_int[j].y,constanthails_int[j].y-constanthails_int[k].y,constanthails_int[k].y-constanthails_int[l].y,constanthails_int[l].y-constanthails_int[i].y},
+                {constanthails_int[i].vx-constanthails_int[j].vx,constanthails_int[j].vx-constanthails_int[k].vx,constanthails_int[k].vx-constanthails_int[l].vx,constanthails_int[l].vx-constanthails_int[i].vx},
+                {constanthails_int[j].x-constanthails_int[i].x,constanthails_int[k].x-constanthails_int[j].x,constanthails_int[l].x-constanthails_int[k].x,constanthails_int[i].x-constanthails_int[l].x}
+            };
+            if (DetCalculatorInt(coefficients_temp) != 0)
+                Console.WriteLine($",{i},{j},{k},{l}");
+                        }
                     }
                 }
-                if (foundzero)
-                    return (BigInteger)(F[0] + F[2] + F[4]);
-
-                // Käytetään Newtonin menetelmää:
-                // On ratkaistava yhtälö d_funcs Δx = -funcs(x0)
-                // Lasketaan d_funcs(F)
-                const int rank = 9;
-                var d_f_x = new double[rank,rank];
-                for (var i = 0; i < rank; i++)
-                {
-                    for (var j = 0; j < rank; j++)
-                    {
-                        d_f_x[i,j] = d_funcs[i,j](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
-                    }
-                }
-
-                var funcsAtF = new double[1,rank];
-                for (var i=0; i<rank ; i++)
-                    funcsAtF[0,i] = funcs[i](F[0], F[1], F[2], F[3], F[4], F[5], F[6], F[7], F[8]);
-                //sijoitus funciin!
-
-                // Nyt tarvitaan d_f_x:n käänteismatriisi, jolloin haluttu Δx = -1 * (d_funcs)^-1 * funcs (x0)
-                var delta_x = MatrixConstMultiplier(-1,MatrixMultiplier(Inverter(d_f_x),funcsAtF));
-
-                // Päivitetään F:ää
-                var new_F = new double[rank];
-
-                for (var i=0; i<rank; i++)
-                    new_F[i] = F[i] + delta_x[0,i];
-                
-                F = new_F;
             }
+            Console.WriteLine(DetCalculatorInt(coefficients_int));
+
+            // vastausvektori = coefficientsin käänteismatriisi * constants
+            var solutionMatrix = MatrixMultiplier(Inverter(coefficients),constants);
+            result += (BigInteger)Math.Round(solutionMatrix[0,0])+(BigInteger)Math.Round(solutionMatrix[0,2]);
+
+            // Tästä voisi ratkaista elegantimminkin z:n, mutta koska ei säätää, toistetaan ylläoleva prosessi x:lle ja z:lle
+
+            coefficients = new double[,]{
+                {constanthails[1].vy-constanthails[0].vy,constanthails[2].vy-constanthails[1].vy,constanthails[3].vy-constanthails[2].vy,constanthails[0].vy-constanthails[3].vy},
+                {constanthails[0].y-constanthails[1].y,constanthails[1].y-constanthails[2].y,constanthails[2].y-constanthails[3].y,constanthails[3].y-constanthails[0].y},
+                {constanthails[0].vz-constanthails[1].vz,constanthails[1].vz-constanthails[2].vz,constanthails[2].vz-constanthails[3].vz,constanthails[3].vz-constanthails[0].vz},
+                {constanthails[1].z-constanthails[0].z,constanthails[2].z-constanthails[1].z,constanthails[3].z-constanthails[2].z,constanthails[0].z-constanthails[3].z}
+            };
+
+            constants = new double[,]{{
+                -constanthails[0].z*constanthails[0].vy+constanthails[0].vz*constanthails[0].y+constanthails[1].z*constanthails[1].vy-constanthails[1].vz*constanthails[1].y,
+                -constanthails[1].z*constanthails[1].vy+constanthails[1].vz*constanthails[1].y+constanthails[2].z*constanthails[2].vy-constanthails[2].vz*constanthails[2].y,
+                -constanthails[2].z*constanthails[2].vy+constanthails[2].vz*constanthails[2].y+constanthails[3].z*constanthails[3].vy-constanthails[3].vz*constanthails[3].y,
+                -constanthails[3].z*constanthails[3].vy+constanthails[3].vz*constanthails[3].y+constanthails[0].z*constanthails[0].vy-constanthails[0].vz*constanthails[0].y,                
+            }};
+
+            solutionMatrix = MatrixMultiplier(Inverter(coefficients),constants);
+            result += (BigInteger)Math.Round(solutionMatrix[0,2]);
+
+            return result;
         }
-        return -1;
 
         double areamin, areamax;
         if (datafile[^12..] == "demo24-1.txt")
@@ -356,10 +436,12 @@ partial class Program
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
         int rank = johnMatrix.GetLength(0);
         var minor = new double[rank - 1, rank - 1];
-        for (var k = 1; k < rank; k++)
+        for (var k = 0; k < rank; k++)
         {
-            for (var l = 1; l < rank; l++)
+            if (k == i) continue;
+            for (var l = 0; l < rank; l++)
             {
+                if (l == j) continue;
                 int mi, mj;
                 if (k < i)
                     mi = k;
@@ -370,7 +452,7 @@ partial class Program
                 else
                     mj = l-1;
 
-                minor[mi,mj] = johnMatrix[j, k];
+                minor[mi,mj] = johnMatrix[k, l];
             }
         }
         return minor;
@@ -429,6 +511,31 @@ partial class Program
         return newMatrix;
     }
 
+    private static BigInteger[,] MatrixMultiplierInt (BigInteger[,] leftMatrix, BigInteger[,] rightMatrix)
+    {
+        int leftCols = leftMatrix.GetLength(0);
+        int rightRows = rightMatrix.GetLength(1);
+        if (leftCols != rightRows)
+            throw new Exception("Ei voi kertoa!");
+        
+        int cols = rightMatrix.GetLength(0);
+        int rows = leftMatrix.GetLength(1);
+        
+        var multiMatrix = new BigInteger[cols,rows];
+
+        for (var i = 0; i < rows; i++)
+        {
+            for (var j = 0; j < cols; j++)
+            {
+                BigInteger c = 0;
+                for (var k = 0; k < leftCols; k++)
+                    c += leftMatrix[k,i] * rightMatrix[j,k];
+                multiMatrix[j,i] = c;
+            }
+        }
+        return multiMatrix;
+    }
+
     private static double[,] MatrixMultiplier (double[,] leftMatrix, double[,] rightMatrix)
     {
         int leftCols = leftMatrix.GetLength(0);
@@ -453,4 +560,78 @@ partial class Program
         }
         return multiMatrix;
     }
+
+    private static BigInteger DetCalculatorInt(BigInteger[,] johnMatrix)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+
+        int rank = johnMatrix.GetLength(0);
+        if (rank == 1)
+            return johnMatrix[0,0];
+        
+        BigInteger determinant = 0;
+        for (var i = 0; i < rank; i++)
+        {
+            var c = johnMatrix[0, i];
+            if (c == 0)
+                continue;
+            BigInteger[,] minor = GetMinorInt(johnMatrix, 0, i);
+            determinant += (BigInteger)Math.Pow(-1, i) * c * DetCalculatorInt(minor);
+        }
+        return determinant;
+    }
+
+    private static BigInteger[,] GetMinorInt(BigInteger[,] johnMatrix, int i, int j)
+    {
+        if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
+        int rank = johnMatrix.GetLength(0);
+        var minor = new BigInteger[rank - 1, rank - 1];
+        for (var k = 0; k < rank; k++)
+        {
+            if (k == i) continue;
+            for (var l = 0; l < rank; l++)
+            {
+                if (l == j) continue;
+                int mi, mj;
+                if (k < i)
+                    mi = k;
+                else
+                    mi = k-1;
+                if (l < j)
+                    mj = l;
+                else
+                    mj = l-1;
+
+                minor[mi,mj] = johnMatrix[k, l];
+            }
+        }
+        return minor;
+    }
+
+    private static BigInteger[] CrossProduct(BigInteger[] leftMatrix, BigInteger[] rightMatrix)
+    {
+        BigInteger i1 = leftMatrix[1]*rightMatrix[2] - leftMatrix[2]*rightMatrix[1];
+        BigInteger i2 = leftMatrix[2]*rightMatrix[0] - leftMatrix[0]*rightMatrix[2];
+        BigInteger i3 = leftMatrix[0]*rightMatrix[1] - leftMatrix[1]*rightMatrix[0];
+
+        return [i1,i2,i3];
+    }
+
+    private static BigInteger DotProduct(BigInteger[] leftMatrix, BigInteger[] rightMatrix)
+    {
+        return leftMatrix[0]*rightMatrix[0] + leftMatrix[1]*rightMatrix[1] + leftMatrix[2]*rightMatrix[2];
+    }
+
+    private static BigInteger[] VectorDiff(BigInteger[] left, BigInteger[] right)
+    {
+        var rank = left.Length;
+        
+        BigInteger[] result = new BigInteger[rank];
+        for (var i=0; i<rank; i++)
+        {
+            result[i] = left[i]-right[i];
+        }
+        return result;
+    }
+
 }
