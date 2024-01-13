@@ -99,9 +99,10 @@ partial class Program
             case 24:
                 result = Day24(phase, datafile);
                 break;
-
+            case 25:
+                result = Day25(phase, datafile);
+                break;
         }
-
         timer.Stop();
         Console.WriteLine(result);
         var runtime = timer.Elapsed;
