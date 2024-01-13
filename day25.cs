@@ -52,7 +52,9 @@ partial class Program
             connectionList.Add(connection.ToList());
         }
 
-        var edges = new Dictionary<string, HashSet<string>>();
+        var edges = new Dictionary<string, Dictionary<string, bool>>();
+
+        // lähtösolmu, kohdesolmu, saako käyttää
 
         foreach (var connection in connectionList)    // Tätä varmaan voisi optimoida
         {
@@ -61,50 +63,33 @@ partial class Program
                 foreach (var othernode in connection.Where(x => x != node))
                 {
                     if (edges.ContainsKey(node))
-                        edges[node].Add(othernode);
+                        edges[node].Add(othernode, true);
                     else
-                        edges.Add(node,[othernode]);
+                        edges.Add(node,new Dictionary<string, bool>{{othernode, true}});
                     if (edges.ContainsKey(othernode))
-                        edges[othernode].Add(node);
+                        edges[othernode].Add(node, true);
                     else
-                        edges.Add(othernode,[node]);
+                        edges.Add(othernode,new Dictionary<string, bool>{{node, true}});
                 }
             }
         }
 
-        for (var i = 0; i<connectionList.Count; i++)
+        var s = edges.First().Key;
+
+        var route = new List<string>();
+        // Koko kara
+        foreach (var goaledge in edges.Where(x => x.Key != s).ToDictionary())
         {
-            for (var j = i+1; j<connectionList.Count; j++)
+            // käytetään Fordin–Fulkersonin algoritmia
+            var thisstep = s;
+            
+            foreach (var nextstep in edges[s].Keys)
             {
-                for (var k = j+1; k<connectionList.Count; k++)
-                {
-
-                    var linkednodes = new HashSet<string>();
-                    linkednodes.Add(edges.First().Key);
-                    HashSet<string> newnodes = [linkednodes.First()];
-
-                    while (newnodes.Count > 0)
-                    {
-                        var new_newnodes = new HashSet<string>();
-                        foreach (var newnode in newnodes)
-                        {
-                            foreach (var linkednode in edges[newnode])
-                            {
-                                if ((newnode == connectionList[i][0] && linkednode == connectionList[i][1]) || (newnode == connectionList[i][1] && linkednode == connectionList[i][0]) || (newnode == connectionList[j][0] && linkednode == connectionList[j][1]) || (newnode == connectionList[j][1] && linkednode == connectionList[j][0]) || (newnode == connectionList[k][0] && linkednode == connectionList[k][1]) || (newnode == connectionList[k][1] && linkednode == connectionList[k][0]))
-                                    continue;
-                                if (!linkednodes.Contains(linkednode))
-                                    new_newnodes.Add(linkednode);
-                                linkednodes.Add(linkednode);
-                            }
-                        }
-                        newnodes = new_newnodes.ToHashSet();
-                    }
-                    if (linkednodes.Count < nodes.Count)
-                        return linkednodes.Count * (nodes.Count-linkednodes.Count);
-                }
+                if (edges[s][nextstep])
+                    newpath = oldpath.Append(nextstep);
             }
+            
         }
-
         return result;
     }
 }
