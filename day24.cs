@@ -6,7 +6,6 @@ using System.Collections.Specialized;
 
 partial class Program
 {
-    static (double x, double vx, double y, double vy, double z, double vz)[] constanthails = Array.Empty<(double x, double vx, double y, double vy, double z, double vz)>();
     static BigInteger Day24(int phase, string datafile)
     {
         string[] lines = [];
@@ -48,28 +47,31 @@ partial class Program
             hails.Add(((pos_x, pos_y, pos_z),(vel_x, vel_y, vel_z)));
         }
 
-        var hailarraylist = new List<(double x, double vx, double y, double vy, double z, double vz)>();
-        foreach (var i in new int[]{0,1,2,4})
-        {
-            var hail = hails[i];
-            var arrayline = ((double)hail.pos.x, (double)hail.vel.x, (double)hail.pos.y, (double)hail.vel.y, (double)hail.pos.z, (double)hail.vel.z);
-            hailarraylist.Add(arrayline);
-        }
-        constanthails = hailarraylist.ToArray();
-
-        var hailarraylist_int = new List<(BigInteger x, BigInteger vx, BigInteger y, BigInteger vy, BigInteger z, BigInteger vz)>();
-        for (var i = 0; i < hails.Count; i++)
-        {
-            var hail = hails[i];
-            var arrayline = (hail.pos.x, hail.vel.x, hail.pos.y, hail.vel.y, hail.pos.z, hail.vel.z);
-            hailarraylist_int.Add(arrayline);
-        }
-        var constanthails_int = hailarraylist_int.ToArray();
-
-
         if (phase == 2)
         {
             // Ratkaisu johdettu kynällä ja paperilla.
+
+            BigInteger[,] X = {
+                {0,0,hails[1].vel.z-hails[0].vel.z,hails[2].vel.z-hails[1].vel.z,hails[0].vel.y-hails[1].vel.y,hails[1].vel.y-hails[2].vel.y},
+                {hails[0].vel.z-hails[1].vel.z,hails[1].vel.z-hails[2].vel.z,0,0,hails[1].vel.x-hails[0].vel.x,hails[2].vel.x-hails[1].vel.x},
+                {hails[1].vel.y-hails[0].vel.y,hails[2].vel.y-hails[1].vel.y,hails[0].vel.x-hails[1].vel.x,hails[1].vel.x-hails[2].vel.x,0,0},
+                {0,0,hails[0].pos.z-hails[1].pos.z,hails[1].pos.z-hails[2].pos.z,hails[1].pos.y-hails[0].pos.y,hails[2].pos.y-hails[1].pos.y},
+                {hails[1].pos.z-hails[0].pos.z,hails[2].pos.z-hails[1].pos.z,0,0,hails[0].pos.x-hails[1].pos.x,hails[1].pos.x-hails[2].pos.x},
+                {hails[0].pos.y-hails[1].pos.y,hails[1].pos.y-hails[2].pos.y,hails[1].pos.x-hails[0].pos.x,hails[2].pos.x-hails[1].pos.x,0,0},              
+            };
+
+            BigInteger[,] b = {
+                {hails[0].vel.z*hails[0].pos.y-hails[1].vel.z*hails[1].pos.y-hails[0].vel.y*hails[0].pos.z+hails[1].vel.y*hails[1].pos.z,
+                hails[1].vel.z*hails[1].pos.y-hails[2].vel.z*hails[2].pos.y-hails[1].vel.y*hails[1].pos.z+hails[2].vel.y*hails[2].pos.z,
+                hails[0].vel.x*hails[0].pos.z-hails[1].vel.x*hails[1].pos.z-hails[0].vel.z*hails[0].pos.x+hails[1].vel.z*hails[1].pos.x,
+                hails[1].vel.x*hails[1].pos.z-hails[2].vel.x*hails[2].pos.z-hails[1].vel.z*hails[1].pos.x+hails[2].vel.z*hails[2].pos.x,
+                hails[0].vel.y*hails[0].pos.x-hails[1].vel.y*hails[1].pos.x-hails[0].vel.x*hails[0].pos.y+hails[1].vel.x*hails[1].pos.y,
+                hails[1].vel.y*hails[1].pos.x-hails[2].vel.y*hails[2].pos.x-hails[1].vel.x*hails[1].pos.y+hails[2].vel.x*hails[2].pos.y}
+            };
+
+            var invX = Inverter(X);
+            var solved = MatrixMultiplier(invX.adjugate,b);
+            return (solved[0,0]+solved[0,1]+solved[0,2])/invX.denumenator;
         }
 
         double areamin, areamax;
@@ -235,7 +237,7 @@ partial class Program
         return comatrix;
     }
 
-    private static (BigInteger denumenator, BigInteger[,] adjungate) Inverter(BigInteger[,] johnMatrix)
+    private static (BigInteger denumenator, BigInteger[,] adjugate) Inverter(BigInteger[,] johnMatrix)
     {
         if (johnMatrix.GetLength(0) != johnMatrix.GetLength(1)) throw new Exception("Ei ole neliömatriisi");
         int rank = johnMatrix.GetLength(0);
@@ -243,19 +245,19 @@ partial class Program
         var invMatrix = new BigInteger[rank,rank];
 
         var det = DetCalculator(johnMatrix);
-        var adjungate = Comatrixer(johnMatrix);
+        var adjugate = Comatrixer(johnMatrix);
 
         for (var i = 0; i < rank; i++)
         {
             for (var j=0; j < rank; j++)
             {
-                invMatrix[i,j] = adjungate[i,j];
+                invMatrix[j,i] = adjugate[i,j];
             }
         }
         return (det, invMatrix);
     }
 
-    private static double[,] MatrixMultiplier (double[,] leftMatrix, double[,] rightMatrix)
+    private static BigInteger[,] MatrixMultiplier (BigInteger[,] leftMatrix, BigInteger[,] rightMatrix)
     {
         int leftCols = leftMatrix.GetLength(0);
         int rightRows = rightMatrix.GetLength(1);
@@ -265,13 +267,13 @@ partial class Program
         int cols = rightMatrix.GetLength(0);
         int rows = leftMatrix.GetLength(1);
         
-        var multiMatrix = new double[cols,rows];
+        var multiMatrix = new BigInteger[cols,rows];
 
         for (var i = 0; i < rows; i++)
         {
             for (var j = 0; j < cols; j++)
             {
-                double c = 0;
+                BigInteger c = 0;
                 for (var k = 0; k < leftCols; k++)
                     c += leftMatrix[k,i] * rightMatrix[j,k];
                 multiMatrix[j,i] = c;
@@ -280,3 +282,6 @@ partial class Program
         return multiMatrix;
     }
 }
+
+//2628625378115323 väärin
+//-21572507975201215
