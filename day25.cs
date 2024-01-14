@@ -38,7 +38,7 @@ partial class Program
             var leftnode = splitline[0].TrimEnd(':');
             foreach (string rightnode in splitline[1..])
             {
-                var connection = new HashSet<string>{leftnode, rightnode};
+                var connection = new HashSet<string> { leftnode, rightnode };
                 connections.Add(connection);
             }
         }
@@ -56,7 +56,7 @@ partial class Program
 
         // lähtösolmu, kohdesolmu, saako käyttää
 
-        foreach (var connection in connectionList)    // Tätä varmaan voisi optimoida
+        foreach (var connection in connectionList)
         {
             foreach (var node in connection)
             {
@@ -65,31 +65,79 @@ partial class Program
                     if (edges.ContainsKey(node))
                         edges[node].Add(othernode, true);
                     else
-                        edges.Add(node,new Dictionary<string, bool>{{othernode, true}});
+                        edges.Add(node, new Dictionary<string, bool> { { othernode, true } });
                     if (edges.ContainsKey(othernode))
                         edges[othernode].Add(node, true);
                     else
-                        edges.Add(othernode,new Dictionary<string, bool>{{node, true}});
+                        edges.Add(othernode, new Dictionary<string, bool> { { node, true } });
                 }
             }
         }
 
         var s = edges.First().Key;
+        int sSide = 1;
+        int otherSide = 0;
 
-        var route = new List<string>();
-        // Koko kara
-        foreach (var goaledge in edges.Where(x => x.Key != s).ToDictionary())
+        foreach (var goaledge in edges.Where(x => x.Key != s).ToDictionary().Keys)
         {
-            // käytetään Fordin–Fulkersonin algoritmia
-            var thisstep = s;
-            
-            foreach (var nextstep in edges[s].Keys)
-            {
-                if (edges[s][nextstep])
-                    newpath = oldpath.Append(nextstep);
-            }
-            
+            if (FindConnectivity(edges, s, goaledge) == 3) otherSide++;
+            else sSide++;
         }
-        return result;
+
+        return otherSide * sSide;
+    }
+
+    private static int FindConnectivity(Dictionary<string, Dictionary<string, bool>> edges, string s, string goaledge)
+    {
+        int connectivity = 0;
+        // Resetoidaan linkit
+        foreach (var edge in edges.Values)
+        {
+            foreach (var goal in edge.Keys)
+                edge[goal] = true;
+        }
+
+        // käytetään Fordin–Fulkersonin algoritmia
+
+        while (true)
+        {
+            var route = new List<List<string>>();
+            route.Add(new List<string>{s});
+            bool foundroute = false;
+
+            // etsitään BFS-haulla lyhin reitti maalisolmuun
+            
+            while (!foundroute)
+            {
+                foreach (var thisroute in route)
+                {
+                    var newroutes = new List<string>();
+                    var laststep = thisroute.LastOrDefault();
+                    foreach (var target in edges[laststep].Keys)
+                    {
+                        if (edges[laststep][target] && !thisroute.Contains(target))
+                        {
+                            if (target == goaledge)
+                            {
+                                // Jos on päästy maaliin
+                                thisroute.Add(target);
+                                for (var i=0; i<thisroute.Count-1;i++)
+                                {
+                                    edges[thisroute[i]][thisroute[i+1]] = false;
+                                    edges[thisroute[i+1]][thisroute[i]] = false;
+                                }
+                                connectivity++;
+                                foundroute = true;
+                                break;
+                            }
+                            newroutes.Add(target);
+                        }
+                    }
+                    if (foundroute)
+                        break;
+                }
+            }
+        }
+        return connectivity;
     }
 }
