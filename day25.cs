@@ -63,11 +63,17 @@ partial class Program
                 foreach (var othernode in connection.Where(x => x != node))
                 {
                     if (edges.ContainsKey(node))
-                        edges[node].Add(othernode, true);
+                    {
+                        if (!edges[node].ContainsKey(othernode))
+                            edges[node].Add(othernode, true);
+                    }
                     else
                         edges.Add(node, new Dictionary<string, bool> { { othernode, true } });
                     if (edges.ContainsKey(othernode))
-                        edges[othernode].Add(node, true);
+                    {
+                        if (!edges[othernode].ContainsKey(node))
+                            edges[othernode].Add(node, true);
+                    }
                     else
                         edges.Add(othernode, new Dictionary<string, bool> { { node, true } });
                 }
@@ -90,6 +96,8 @@ partial class Program
     private static int FindConnectivity(Dictionary<string, Dictionary<string, bool>> edges, string s, string goaledge)
     {
         int connectivity = 0;
+        // Yhdistettävyys voi olla maksimissaan maalisolmusta lähtevien polkujen määrä.
+        int connectivityMax = edges[goaledge].Count;
         // Resetoidaan linkit
         foreach (var edge in edges.Values)
         {
@@ -101,21 +109,24 @@ partial class Program
 
         while (true)
         {
-            var route = new List<List<string>>();
-            route.Add(new List<string>{s});
+            var route = new List<List<string>>
+            {
+                new List<string> { s }
+            };
             bool foundroute = false;
 
             // etsitään BFS-haulla lyhin reitti maalisolmuun
             
             while (!foundroute)
             {
+                var nextroutes = new List<List<string>>();
                 foreach (var thisroute in route)
                 {
                     var newroutes = new List<string>();
                     var laststep = thisroute.LastOrDefault();
                     foreach (var target in edges[laststep].Keys)
                     {
-                        if (edges[laststep][target] && !thisroute.Contains(target))
+                        if (edges[laststep][target] && !thisroute.Contains(target) && !route.Any(x => x.Contains(target)))
                         {
                             if (target == goaledge)
                             {
@@ -127,6 +138,8 @@ partial class Program
                                     edges[thisroute[i+1]][thisroute[i]] = false;
                                 }
                                 connectivity++;
+                                if (connectivity == connectivityMax)
+                                    return connectivity;
                                 foundroute = true;
                                 break;
                             }
@@ -135,7 +148,19 @@ partial class Program
                     }
                     if (foundroute)
                         break;
+                    foreach (var newroute in newroutes)
+                    {
+                        var addable = thisroute.ToList();
+                        addable.Add(newroute);
+                        nextroutes.Add(addable);
+                    }
                 }
+                // Jos ei päästä enää eteenpäin eikä olla maalissakaan, kaikki reitit on tutkittu
+                if (foundroute)
+                    break;
+                if (nextroutes.Count == 0)
+                    return connectivity;
+                route = nextroutes.ToList();
             }
         }
         return connectivity;
